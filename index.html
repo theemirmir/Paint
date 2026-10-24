@@ -98,19 +98,12 @@
   }
   .rankCard.compact { min-width: 220px; padding: 8px 12px; gap: 10px; border-radius: 16px; box-shadow: 0 4px 0 #2b2f3a, 0 8px 18px rgba(0,0,0,0.18); }
   .rankMedal {
-    width: 64px; height: 64px; border-radius: 50%; border: 3px solid #2b2f3a; flex: none; position: relative;
-    display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 22px; color: #fff;
-    text-shadow: 0 2px 0 rgba(0,0,0,0.25); box-shadow: inset 0 -6px 0 rgba(0,0,0,0.12), 0 0 0 4px rgba(255,255,255,0.55), 0 8px 16px rgba(0,0,0,0.18);
+    width: 58px; height: 72px; border: none; border-radius: 0; background: none; box-shadow: none;
+    flex: none; position: relative; overflow: visible;
     animation: medalBob 2.4s ease-in-out infinite;
   }
-  .rankMedal::before, .rankMedal::after {
-    content: ""; position: absolute; bottom: -10px; width: 14px; height: 22px; border: 2px solid #2b2f3a;
-    background: var(--ribbon, #d4a000); z-index: -1;
-  }
-  .rankMedal::before { left: 10px; transform: rotate(-18deg); border-radius: 0 0 4px 8px; }
-  .rankMedal::after { right: 10px; transform: rotate(18deg); border-radius: 0 0 8px 4px; }
-  .rankCard.compact .rankMedal { width: 44px; height: 44px; font-size: 15px; animation: none; }
-  .rankCard.compact .rankMedal::before, .rankCard.compact .rankMedal::after { bottom: -7px; height: 14px; width: 10px; }
+  .rankMedal::before, .rankMedal::after { display: none; }
+  .rankCard.compact .rankMedal { width: 40px; height: 50px; animation: none; }
   @keyframes medalBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
   .rankInfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
   .rankTitleRow { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
@@ -129,6 +122,34 @@
   }
   .rankChip.on { opacity: 1; box-shadow: 0 3px 0 #2b2f3a; transform: translateY(-1px); }
   .rankChip.done { opacity: 0.85; }
+  .rankPair { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+  .rankMedal canvas { width: 100%; height: 100%; display: block; }
+  .modeGrid { display: flex; gap: 28px; flex-wrap: wrap; justify-content: center; }
+  .modeCard {
+    width: 420px; padding: 14px 14px 16px; cursor: pointer;
+    border: 4px solid #2b2f3a; border-radius: 22px; background: #e7f2ff;
+    box-shadow: 0 8px 0 #2b2f3a; display: flex; flex-direction: column; align-items: center; gap: 10px;
+  }
+  .modeCard b { font-size: 26px; letter-spacing: 0.5px; }
+  .modePics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
+  .modeStep { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+  .modeStep canvas {
+    width: 100%; height: auto; display: block; border: 3px solid #2b2f3a; border-radius: 12px; background: #d7f1ff;
+  }
+  .modeStep figcaption { font-size: 12px; font-weight: 900; text-align: center; color: #243044; }
+  #modeScreen { overflow: auto; justify-content: flex-start; padding: 28px 16px 36px; }
+  .modeCard.on { outline: 5px solid #3ee68a; transform: translateY(-4px); }
+  .blockPile { display: grid; grid-template-columns: repeat(3, 46px); gap: 6px; margin-top: 6px; }
+  .blockPile i {
+    display: block; height: 46px; border-radius: 8px; border: 3px solid #2b2f3a;
+    box-shadow: inset 0 9px 0 rgba(255,255,255,0.38), 0 4px 0 #1b2030;
+  }
+  .cardBtns { display: flex; gap: 6px; justify-content: center; margin-top: 8px; }
+  .cardBtns .btn { font-size: 12px; padding: 6px 8px; }
+  #viewCanvas { width: 280px; height: 180px; border: 4px solid #2b2f3a; border-radius: 16px; background: #e7f3ff; }
+  #viewStats { text-align: left; font-weight: 800; line-height: 1.5; }
+  #survBox { position: absolute; top: 16px; left: 16px; z-index: 5; min-width: 160px; }
+  #spectateBox { position: absolute; top: 108px; left: 50%; transform: translateX(-50%); z-index: 6; text-align: center; min-width: 240px; }
   #hudRank { position: absolute; top: 66px; left: 50%; transform: translateX(-50%); pointer-events: none; animation: hudPop 0.45s ease-out; }
   #menuRankWrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
   #voteScreen .voteGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; width: min(1100px, 96vw); }
@@ -307,23 +328,37 @@
     <button id="btnSolo" class="btn green big">PLAY SOLO</button>
     <button id="btnMulti" class="btn yellow big">MULTIPLAYER</button>
     <button id="btnShop" class="btn pink big">SHOP</button>
+    <button id="btnMode" class="btn gray big">GAMEMODE</button>
   </div>
+  <div class="hello">Mode: <b id="modeNow">PVP</b> &nbsp;&bull;&nbsp; <b id="menuExp">0</b> EXP</div>
   <div id="menuRankWrap">
+  <div class="rankPair">
   <div id="menuRank" class="rankCard">
-    <div class="rankMedal" id="menuRankMedal">B</div>
+    <div class="rankMedal" id="menuRankMedal"><canvas width="128" height="128"></canvas></div>
     <div class="rankInfo">
-      <div class="rankTitleRow"><span class="rankTitle" id="menuRankName">BRONZE</span><span class="rankWins" id="menuRankWinsLabel">0 wins</span></div>
+      <div class="rankTitleRow"><span class="rankTitle" id="menuRankName">BRONZE</span><span class="rankWins" id="menuRankWinsLabel">0 coins</span></div>
       <div class="rankStars" id="menuRankStars"></div>
       <div class="rankTrack"><div class="rankFill" id="menuRankFill"></div></div>
       <div class="rankNext" id="menuRankNext">Play to climb!</div>
     </div>
   </div>
+  <div id="survRank" class="rankCard">
+    <div class="rankMedal" id="survRankMedal"><canvas width="128" height="128"></canvas></div>
+    <div class="rankInfo">
+      <div class="rankTitleRow"><span class="rankTitle" id="survRankName">ROOKIE</span><span class="rankWins" id="survRankWinsLabel">0 waves</span></div>
+      <div class="rankStars" id="survRankStars"></div>
+      <div class="rankTrack"><div class="rankFill" id="survRankFill"></div></div>
+      <div class="rankNext" id="survRankNext">Survival tiers</div>
+    </div>
+  </div>
+  </div>
   <div class="rankLadder" id="menuRankLadder"></div>
+  <div class="rankLadder" id="survRankLadder"></div>
 </div>
-  <div class="hello"><b id="menuWins">0</b> wins &nbsp;&bull;&nbsp; <b id="menuSkin"></b> &nbsp;&bull;&nbsp; <b id="menuGun"></b> &nbsp;&bull;&nbsp; <b id="menuAcc"></b></div>
+  <div class="hello"><b id="menuWins">0</b> coins &nbsp;&bull;&nbsp; <b id="menuSkin"></b> &nbsp;&bull;&nbsp; <b id="menuGun"></b> &nbsp;&bull;&nbsp; <b id="menuAcc"></b></div>
   <div class="muted">WASD move &bull; Space jump &bull; Mouse look &bull; Hold click shoot/charge &bull; Q / right-click accessory &bull; R reload</div>
   <div class="muted">Your rank sets NPC aim: Bronze miss a lot · Silver slight · Gold sometimes · Plat most · Diamond 90% · Master never miss</div>
-  <div class="muted">4 vs 4 &bull; vote a map &bull; random team colors &bull; 60s &bull; most paint wins</div>
+  <div class="muted" id="modeBlurb">4 vs 4 &bull; vote a map &bull; random team colors &bull; 60s &bull; most paint wins</div>
 </div>
 
 <div id="voteScreen" class="screen hidden">
@@ -348,10 +383,10 @@
 
 <div id="lobbyScreen" class="screen hidden">
   <h1 id="lobbyTitle" class="outline" style="color:#fff;font-size:40px"></h1>
-  <div class="muted">Pick your side. Empty slots are filled with NPCs when the battle starts.</div>
+  <div class="muted" id="lobbyBlurb">Pick your side. Empty slots are filled with NPCs when the battle starts.</div>
   <div class="teams">
-    <div class="team"><h3 id="lobbyTeamA" style="color:#e3a900">TEAM A</h3><div id="slotsA"></div><button id="joinA" class="btn yellow small">JOIN TEAM A</button></div>
-    <div class="team"><h3 id="lobbyTeamB" style="color:#cf2d7c">TEAM B</h3><div id="slotsB"></div><button id="joinB" class="btn pink small">JOIN TEAM B</button></div>
+    <div class="team" id="teamColA"><h3 id="lobbyTeamA" style="color:#e3a900">TEAM A</h3><div id="slotsA"></div><button id="joinA" class="btn yellow small">JOIN TEAM A</button></div>
+    <div class="team" id="teamColB"><h3 id="lobbyTeamB" style="color:#cf2d7c">TEAM B</h3><div id="slotsB"></div><button id="joinB" class="btn pink small">JOIN TEAM B</button></div>
   </div>
   <div class="row">
     <button id="btnStart" class="btn green big">START BATTLE</button>
@@ -362,7 +397,7 @@
 
 <div id="shopScreen" class="screen hidden">
   <h1 id="shopTitle" class="outline" style="color:#ff4fa3;font-size:48px">SHOP</h1>
-  <div class="hello">You have <b id="shopWins">0</b> wins</div>
+  <div class="hello">You have <b id="shopWins">0</b> coins &nbsp;&bull;&nbsp; <b id="shopExp">0</b> EXP</div>
   <div class="shopBody">
     <div class="shopWrap">
       <div class="shopTabs">
@@ -379,11 +414,51 @@
   <button id="btnShopBack" class="btn gray">BACK</button>
 </div>
 
+<div id="modeScreen" class="screen hidden">
+  <h1 class="outline" style="color:#fff;font-size:48px">GAMEMODE</h1>
+  <div class="muted">The pictures show what you will do. Pick one, then play solo or multiplayer.</div>
+  <div class="modeGrid">
+    <div id="modePvp" class="modeCard">
+      <b>PVP</b>
+      <div class="modePics">
+        <figure class="modeStep"><canvas id="pvpPic1" width="300" height="168"></canvas><figcaption>Pick a team</figcaption></figure>
+        <figure class="modeStep"><canvas id="pvpPic2" width="300" height="168"></canvas><figcaption>Vote a map</figcaption></figure>
+        <figure class="modeStep"><canvas id="pvpPic3" width="300" height="168"></canvas><figcaption>Paint for 60s</figcaption></figure>
+        <figure class="modeStep"><canvas id="pvpPic4" width="300" height="168"></canvas><figcaption>Most paint wins</figcaption></figure>
+      </div>
+    </div>
+    <div id="modeSurv" class="modeCard">
+      <b>SURVIVAL</b>
+      <div class="modePics">
+        <figure class="modeStep"><canvas id="survPic1" width="300" height="168"></canvas><figcaption>One squad</figcaption></figure>
+        <figure class="modeStep"><canvas id="survPic2" width="300" height="168"></canvas><figcaption>Vote an arena</figcaption></figure>
+        <figure class="modeStep"><canvas id="survPic3" width="300" height="168"></canvas><figcaption>Fight the waves</figcaption></figure>
+        <figure class="modeStep"><canvas id="survPic4" width="300" height="168"></canvas><figcaption>Waves pay you</figcaption></figure>
+      </div>
+    </div>
+  </div>
+  <button id="btnModeBack" class="btn gray">BACK</button>
+</div>
+
+<div id="viewScreen" class="modal hidden">
+  <div class="card wide">
+    <h2 id="viewTitle">ITEM</h2>
+    <canvas id="viewCanvas" width="280" height="180"></canvas>
+    <div id="viewStats"></div>
+    <div class="row">
+      <button id="btnUpgrade" class="btn yellow">UPGRADE</button>
+      <button id="btnViewClose" class="btn gray">CLOSE</button>
+    </div>
+  </div>
+</div>
+
 <div id="mapTag" class="hidden">ARENA</div>
 <div id="hud" class="hidden">
   <div id="scorebar"><div id="barA"></div><div id="barB"></div><span id="pctA">0%</span><span id="pctB">0%</span></div>
+  <div id="survBox" class="panel hidden">WAVE <b id="survWave">1</b><br>ZOMBIES <b id="survLeft">0</b><br>CLEARED <b id="survClear">0</b></div>
+  <div id="spectateBox" class="panel hidden"><div id="spectateName">WATCHING</div><div class="row" style="margin-top:8px"><button id="specPrev" class="btn gray small" type="button">PREV</button><button id="specNext" class="btn gray small" type="button">NEXT</button></div></div>
   <div id="hudRank" class="rankCard compact">
-    <div class="rankMedal" id="hudRankMedal">B</div>
+    <div class="rankMedal" id="hudRankMedal"><canvas width="128" height="128"></canvas></div>
     <div class="rankInfo">
       <div class="rankTitleRow"><span class="rankTitle" id="hudRankName">BRONZE</span><span class="rankWins" id="hudRankWinsLabel">0</span></div>
       <div class="rankStars" id="hudRankStars"></div>
@@ -975,6 +1050,16 @@ const profile = { name: '', wins: 0, skin: 'lime', gun: 'paintball', accessory: 
 try { Object.assign(profile, JSON.parse(localStorage.getItem('slimePaintball3d') || '{}')); } catch (e) { /* fresh profile */ }
 if (!profile.gun) profile.gun = 'paintball';
 if (!profile.accessory) profile.accessory = 'grenade';
+if (!profile.gunLv || typeof profile.gunLv !== 'object') profile.gunLv = {};
+if (profile.exp == null) profile.exp = 0;
+if (profile.survivalWaves == null) profile.survivalWaves = 0;
+let gameMode = profile.mode === 'survival' ? 'survival' : 'pvp';
+let shopPick = null;
+let viewItem = null;
+let spectateId = null;
+let surv = null;
+let survEnded = false;
+let survView = { wave: 1, cleared: 0, left: 0 };
 const saveProfile = () => localStorage.setItem('slimePaintball3d', JSON.stringify(profile));
 
 const GUNS = [
@@ -990,7 +1075,7 @@ const GUNS = [
   { id: 'shotgun', name: 'Shotgun', wins: 70, ammo: 10, dmg: 100, rate: 0.75, walkMul: 0.92, desc: '10 shells · 1–3m: 5×5 two-shot · 4–7m: 3×3 four-shot · 8m+: 2×2 sixteen-shot' },
   { id: 'spray', name: 'Spray', wins: 50, ammo: 20, dmg: 30, rate: 0.28, walkMul: 1, desc: '20 ammo · one click fires 4 rounds fast · paintball damage · infinite range' },
   { id: 'canon', name: 'Canon', wins: 80, ammo: 0, dmg: 100, rate: 1, charge: 2, walkMul: 0.86, desc: '2×2 plasma two-shot · 1s purple energy cooldown · hold 2s to sonic-lift for 4s' },
-  { id: 'lasso', name: 'Lasso', wins: 60, ammo: 0, dmg: 30, rate: 0.16, walkMul: 1, desc: 'Whip-smash a foe for half HP · hoop holds 10 blocks (they stay) · throw: +½ grenade range and 30 dmg per block' },
+  { id: 'lasso', name: 'Lasso', wins: 100, ammo: 0, dmg: 30, rate: 0.16, walkMul: 1, desc: 'Whip-smash a foe for half HP · hoop holds 10 blocks (they stay) · throw: +½ grenade range and 30 dmg per block' },
 ];
 const ACCESSORIES = [
   { id: 'grenade', name: 'Grenade', wins: 0, starter: true, desc: 'Classic paint bomb' },
@@ -1098,7 +1183,27 @@ const rankByWins = w => {
   for (const x of RANKS) if (w >= x.wins) r = x;
   return r;
 };
-const npcDiff = () => Math.min(1, Math.max(0, profile.wins / 100)); // 0 = easy, 1 = 100-win NPCs
+const SURVIVAL_TIERS = [
+  { id: 'rookie', name: 'ROOKIE', waves: 0, stars: 0, color: '#b7c2d0', ribbon: '#7d8794' },
+  { id: 'bronze', name: 'BRONZE', waves: 1, stars: 1, color: '#d4894a', ribbon: '#8a4e24' },
+  { id: 'silver', name: 'SILVER', waves: 4, stars: 2, color: '#e4ebf4', ribbon: '#8b95a6' },
+  { id: 'gold', name: 'GOLD', waves: 8, stars: 3, color: '#ffd21f', ribbon: '#e0a800' },
+  { id: 'platinum', name: 'PLATINUM', waves: 20, stars: 4, color: '#8fdfff', ribbon: '#2f8fd0' },
+  { id: 'diamond', name: 'DIAMOND', waves: 46, stars: 5, color: '#d8fbff', ribbon: '#49cbe6' },
+  { id: 'survivor', name: 'SURVIVOR', waves: 70, stars: 5, color: '#ff5eae', ribbon: '#c2186a' },
+];
+const tierByWaves = w => {
+  let r = SURVIVAL_TIERS[0];
+  for (const x of SURVIVAL_TIERS) if (w >= x.waves) r = x;
+  return r;
+};
+function isSurvival() {
+  if (state === 'game' || state === 'vote' || state === 'lobby') return !!(lobby && lobby.mode === 'survival');
+  return gameMode === 'survival';
+}
+function gunLevel(id) { return Math.max(0, (profile.gunLv && profile.gunLv[id]) || 0); }
+function upgradeCost(lv) { return 8 + lv * 10; }
+const GUN_MAX_LV = 8;
 /** Rank-scaled NPC aim: bronze almost misses, master never misses. */
 const NPC_AIM = {
   bronze:   { hit: 0.08, missSpread: 0.95, hitSpread: 0.28, lead: 0,     track: 0.18 },
@@ -1108,6 +1213,7 @@ const NPC_AIM = {
   diamond:  { hit: 0.90, missSpread: 0.16, hitSpread: 0.025, lead: 0.13, track: 0.92 },
   master:   { hit: 1.00, missSpread: 0.00, hitSpread: 0.0,  lead: 0.16,  track: 1.00 },
 };
+const npcDiff = () => Math.min(1, Math.max(0, profile.wins / 100)); // 0 = easy, 1 = 100-coin NPCs
 const npcAim = () => NPC_AIM[rankByWins(profile.wins).id] || NPC_AIM.bronze;
 
 const isMobile = (() => {
@@ -1851,11 +1957,13 @@ let arenaRim = null, mapRoot = null, blocks = null, splatMesh = null, splatN = 0
 const MAX_SPLATS = 2800;
 const splatDummy = new THREE.Object3D();
 const dummy = new THREE.Object3D();
+const dishDummy = new THREE.Object3D();
 const vxyz = i => [i % X, Math.floor(i / (X * Z)), Math.floor(i / X) % Z];
 let tramps = [];
 function placeBlock(k, i, s = 1) {
-  if (!blocks || k < 0) return;
+  if (!blocks || k < 0 || k >= blocks.count) return;
   const [x, y, z] = vxyz(i);
+  dummy.rotation.set(0, 0, 0);
   dummy.position.set(x + 0.5, y + 0.5, z + 0.5); dummy.scale.setScalar(s); dummy.updateMatrix();
   blocks.setMatrixAt(k, dummy.matrix);
 }
@@ -2159,6 +2267,7 @@ function rebuildTramps() {
 function rebuildBlocksMesh() {
   if (blocks) { scene.remove(blocks); blocks.dispose?.(); }
   blockList = [];
+  pops.clear();
   for (let i = 0; i < vox.length; i++) if (vox[i] === 1) blockList.push(i);
   instOf = new Int32Array(vox.length).fill(-1);
   const count = Math.max(1, blockList.length);
@@ -2171,6 +2280,7 @@ function rebuildBlocksMesh() {
   blockList.forEach((i, k) => {
     instOf[i] = k;
     const [x, y, z] = vxyz(i);
+    dummy.rotation.set(0, 0, 0);
     dummy.position.set(x + 0.5, y + 0.5, z + 0.5); dummy.scale.setScalar(1); dummy.updateMatrix();
     blocks.setMatrixAt(k, dummy.matrix);
     if (mapMode === 'voxel') {
@@ -2734,10 +2844,10 @@ function detailPetriDish(root) {
     const a = (i / nB) * Math.PI * 2 * 3;
     const rr = 3 + (i % 10) * 1.45;
     dishBact.data.push({ cx: cx + Math.cos(a) * rr, cz: cz + Math.sin(a) * rr, phase: i * 0.4, spd: 0.4 + (i % 5) * 0.08 });
-    dummy.position.set(cx + Math.cos(a) * rr, 1.15, cz + Math.sin(a) * rr);
-    dummy.rotation.set(0, i * 0.4, Math.PI / 2);
-    dummy.updateMatrix();
-    dishBact.mesh.setMatrixAt(i, dummy.matrix);
+    dishDummy.position.set(cx + Math.cos(a) * rr, 1.15, cz + Math.sin(a) * rr);
+    dishDummy.rotation.set(0, i * 0.4, Math.PI / 2);
+    dishDummy.updateMatrix();
+    dishBact.mesh.setMatrixAt(i, dishDummy.matrix);
   }
   dishBact.mesh.instanceMatrix.needsUpdate = true;
   root.add(dishBact.mesh);
@@ -2776,10 +2886,10 @@ function tickPetriDish(dt) {
     for (let i = 0; i < dishBact.n; i++) {
       const b = dishBact.data[i];
       const a = t * b.spd + b.phase;
-      dummy.position.set(b.cx + Math.cos(a) * 0.8, 1.15 + Math.sin(a * 2) * 0.05, b.cz + Math.sin(a) * 0.8);
-      dummy.rotation.set(0, a, Math.PI / 2);
-      dummy.updateMatrix();
-      dishBact.mesh.setMatrixAt(i, dummy.matrix);
+      dishDummy.position.set(b.cx + Math.cos(a) * 0.8, 1.15 + Math.sin(a * 2) * 0.05, b.cz + Math.sin(a) * 0.8);
+      dishDummy.rotation.set(0, a, Math.PI / 2);
+      dishDummy.updateMatrix();
+      dishBact.mesh.setMatrixAt(i, dishDummy.matrix);
     }
     dishBact.mesh.instanceMatrix.needsUpdate = true;
   }
@@ -3817,17 +3927,66 @@ function drawTag(q) {
   g.fillRect(51, 49, 154 * Math.max(0, q.hp) / hpMax, 12);
   q.tag.tex.needsUpdate = true;
 }
+function addZombieCorpse(inner) {
+  const bone = new THREE.MeshStandardMaterial({ color: '#efe2c4', roughness: 0.62, metalness: 0.02 });
+  const flesh = new THREE.MeshStandardMaterial({ color: '#8f342c', roughness: 0.82, emissive: '#3d1210', emissiveIntensity: 0.1 });
+  const meat = new THREE.MeshStandardMaterial({ color: '#c46a58', roughness: 0.74, emissive: '#4a1c16', emissiveIntensity: 0.06 });
+  const hole = new THREE.MeshStandardMaterial({ color: '#140e0c', roughness: 0.95 });
+  const lid = new THREE.MeshStandardMaterial({ color: '#4e4938', roughness: 0.92 });
+  const milky = new THREE.MeshStandardMaterial({ color: '#cfc6b2', roughness: 0.88, emissive: '#2a2820', emissiveIntensity: 0.04 });
+  const put = (mesh, x, y, z, s, r) => {
+    mesh.position.set(x, y, z);
+    if (s) mesh.scale.set(s[0], s[1], s[2]);
+    if (r) mesh.rotation.set(r[0], r[1], r[2]);
+    mesh.castShadow = true;
+    inner.add(mesh);
+  };
+  for (let i = 0; i < 4; i++) {
+    put(new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.02, 0.028), bone), 0.0, 0.18 + i * 0.06, -0.58, null, [0.08, 0.12, -0.05]);
+  }
+  put(new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 8), bone), 0.1, 0.62, -0.16, [1.2, 0.4, 0.75]);
+  const knob = new THREE.SphereGeometry(0.04, 8, 6);
+  for (let i = 0; i < 4; i++) put(new THREE.Mesh(knob, bone), 0, 0.16 + i * 0.12, 0.52, [1, 0.7, 0.8]);
+  put(new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.03, 0.32, 6), bone), 0.52, 0.3, 0.02, null, [0.3, 0, 1.2]);
+  put(new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 8), hole), 0.12, 0.3, -0.52, [1.15, 0.85, 0.7]);
+  put(new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 6), flesh), 0.16, 0.27, -0.58, [1.3, 0.75, 0.8]);
+  put(new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.16, 0.02), meat), 0.18, 0.16, -0.6, null, [0.2, 0, 0.25]);
+  put(new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.11, 0.018), flesh), 0.08, 0.16, -0.58, null, [0.05, 0.15, -0.35]);
+  put(new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.045, 0.03), flesh), -0.5, 0.28, 0.0, null, [0, 0.2, 0.4]);
+  put(new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.018, 0.018), bone), -0.54, 0.29, 0.02, null, [0.15, 0.3, 0.2]);
+  put(new THREE.Mesh(new THREE.SphereGeometry(0.026, 10, 8), hole), -0.1, 0.48, -0.36);
+  put(new THREE.Mesh(new THREE.TorusGeometry(0.032, 0.007, 6, 10), bone), -0.1, 0.48, -0.4, null, [1.15, 0, 0]);
+  put(new THREE.Mesh(new THREE.SphereGeometry(0.02, 10, 8), milky), 0.11, 0.46, -0.4, [1.05, 0.32, 0.55]);
+  put(new THREE.Mesh(new THREE.SphereGeometry(0.008, 8, 6), hole), 0.11, 0.458, -0.415);
+  put(new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.018, 0.016), lid), 0.11, 0.472, -0.4);
+  put(new THREE.Mesh(new THREE.SphereGeometry(0.04, 10, 8), hole), 0.0, 0.15, -0.52, [1.4, 0.4, 0.35]);
+  put(new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.02, 0.018), bone), 0.0, 0.08, -0.56, null, [0.25, 0, 0.08]);
+  put(new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.045, 0.014), bone), -0.03, 0.12, -0.57, null, [0.2, 0, 0.35]);
+  put(new THREE.Mesh(new THREE.BoxGeometry(0.014, 0.036, 0.012), bone), 0.03, 0.11, -0.57, null, [-0.15, 0, -0.2]);
+}
 function makeSlimeMesh(q) {
   const g = new THREE.Group();
   const skin = skinById(q.skin);
   const mat = skinMaterial(skin);
-  const body = new THREE.Mesh(slimeGeo, mat);
+  const body = new THREE.Mesh(slimeGeo, q.zombie ? mat.clone() : mat);
+  if (q.zombie) {
+    body.material.color.set('#5c5844');
+    body.material.emissive.set('#1c1610');
+    body.material.emissiveIntensity = 0.04;
+    body.material.roughness = 0.94;
+    body.material.metalness = 0;
+  }
   body.castShadow = true; body.receiveShadow = true;
   const inner = new THREE.Group(); inner.add(body); g.add(inner);
+  const eyes = [];
+  let extras = null;
+  let shine = null;
+  if (q.zombie) addZombieCorpse(inner);
+  else {
   // soft belly highlight
   const belly = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 12), new THREE.MeshStandardMaterial({ color: '#ffffff', transparent: true, opacity: 0.22, roughness: 0.15 }));
   belly.position.set(0, 0.22, -0.18); belly.scale.set(1.1, 0.9, 0.55); inner.add(belly);
-  const shine = new THREE.Mesh(shineGeo, new THREE.MeshStandardMaterial({ color: '#ffffff', transparent: true, opacity: 0.65, roughness: 0.08 }));
+  shine = new THREE.Mesh(shineGeo, new THREE.MeshStandardMaterial({ color: '#ffffff', transparent: true, opacity: 0.65, roughness: 0.08 }));
   shine.position.set(-0.18, 0.52, -0.3); shine.scale.set(1.3, 0.75, 0.55); inner.add(shine);
   const shine2 = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), new THREE.MeshStandardMaterial({ color: '#ffffff', transparent: true, opacity: 0.5 }));
   shine2.position.set(0.12, 0.55, -0.22); inner.add(shine2);
@@ -3835,7 +3994,6 @@ function makeSlimeMesh(q) {
   const black = new THREE.MeshStandardMaterial({ color: '#14161b', roughness: 0.35 });
   const blush = new THREE.MeshStandardMaterial({ color: '#ff7ab8', transparent: true, opacity: 0.72, emissive: '#ff4fa3', emissiveIntensity: 0.15 });
   const lidMat = new THREE.MeshStandardMaterial({ color: skin.color, roughness: 0.25, emissive: skin.color, emissiveIntensity: 0.12 });
-  const eyes = [];
   for (const ex of [-0.17, 0.17]) {
     const eyeWhite = new THREE.Mesh(new THREE.SphereGeometry(0.135, 18, 14), white);
     eyeWhite.position.set(ex, 0.44, -0.34); eyeWhite.scale.set(1.05, 1.25, 0.6);
@@ -3854,7 +4012,6 @@ function makeSlimeMesh(q) {
     inner.add(eyeWhite, pupil, iris, glint, glint2, brow, cheek);
     eyes.push({ white: eyeWhite, pupil, iris, glint, glint2 });
   }
-  // Big happy smile (open arc facing up)
   const mouth = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.018, 8, 20, Math.PI), black);
   mouth.position.set(0, 0.22, -0.4); mouth.rotation.set(Math.PI / 2, 0, 0); inner.add(mouth);
   const tooth = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.045, 0.02), white); tooth.position.set(0, 0.2, -0.42); inner.add(tooth);
@@ -3862,7 +4019,8 @@ function makeSlimeMesh(q) {
   band.rotation.x = Math.PI / 2; band.position.y = 0.05; inner.add(band);
   const bandGem = new THREE.Mesh(new THREE.OctahedronGeometry(0.05), new THREE.MeshStandardMaterial({ color: '#ffffff', emissive: TEAMS[q.team].color, emissiveIntensity: 0.5, metalness: 0.6 }));
   bandGem.position.set(0, 0.05, -0.48); inner.add(bandGem);
-  const extras = addSkinExtras(inner, skin, q.team);
+  extras = addSkinExtras(inner, skin, q.team);
+  }
   const orb = new THREE.Group();
   const orbCore = new THREE.Mesh(
     new THREE.SphereGeometry(0.13, 24, 18),
@@ -3875,6 +4033,16 @@ function makeSlimeMesh(q) {
   orbRing2.rotation.y = Math.PI / 2;
   const orbBits = new THREE.Mesh(new THREE.OctahedronGeometry(0.04), new THREE.MeshStandardMaterial({ color: '#fff6a8', emissive: '#ffd21f', emissiveIntensity: 0.6 }));
   orbBits.position.set(0.12, 0.08, 0);
+  if (q.zombie) {
+    orbCore.material.color.set('#3e3830');
+    orbCore.material.emissive.set('#241c16');
+    orbCore.material.emissiveIntensity = 0.1;
+    orbGlow.material.opacity = 0.04;
+    orbRing.material.color.set('#6a6256');
+    orbRing.material.emissiveIntensity = 0.08;
+    orbRing2.material.emissiveIntensity = 0.08;
+    orbBits.visible = false;
+  }
   orb.add(orbCore, orbGlow, orbRing, orbRing2, orbBits);
   orb.userData.ring = orbRing; orb.userData.ring2 = orbRing2; orb.userData.bits = orbBits;
   orb.position.set(0.46, 0.42, -0.08);
@@ -3940,7 +4108,14 @@ let hpFlash = 0, lastHp = MAX_HP;
 let lobby = null;
 const myCid = Math.random().toString(36).slice(2, 10);
 const isHost = () => !lobby || lobby.isHost;
-function equippedGun(q) { return gunById(q?.gun || profile.gun); }
+function equippedGun(q) {
+  const g = gunById(q?.gun || profile.gun);
+  const lv = q && !q.local ? (q.gunLv || 0) : gunLevel(g.id);
+  if (!lv) return g;
+  const mul = 1 + lv * 0.08;
+  const scale = n => n == null ? n : Math.max(1, Math.round(n * mul));
+  return { ...g, dmg: scale(g.dmg), scopeDmg: scale(g.scopeDmg), maxDmg: scale(g.maxDmg), sweepDmg: scale(g.sweepDmg) };
+}
 function equippedAcc(q) { return accById(q?.accessory || profile.accessory); }
 function maxAmmoFor(q) { return equippedGun(q).ammo; }
 
@@ -3950,13 +4125,19 @@ function makePlayer(d, slot) {
     npc: !!d.npc, local: d.id === myCid, slot,
     x: 0, y: 1, z: 0, vx: 0, vy: 0, vz: 0, yaw: SPAWN_YAW[d.team], pitch: 0, onGround: false, coyote: 0,
     hp: MAX_HP + (d.hpBonus || 0), alive: true, respawnT: 0, deadT: 0, lastHit: -99, shieldT: 0, dash: 0, item: null, itemT: 0,
-    maxHp: MAX_HP + (d.hpBonus || 0),
+    maxHp: MAX_HP + (d.hpBonus || 0), gunLv: d.gunLv || 0,
+    zombie: !!d.zombie, aimRank: d.aimRank || null, zDiff: d.zDiff || 0,
     bombCd: 1.5, fireCd: 0, tgt: null, seen: performance.now(), anim: Math.random() * 10,
     boulderRide: false, skyBoost: false, skyAir: false, skyRingT: 0,
     ai: { target: null, t: 0, hop: 0, stuck: 0, lx: 0, lz: 0 },
   };
   if (!q.local) q.mesh = makeSlimeMesh(q);
   spawnAt(q);
+  if (q.zombie) {
+    const ang = slot * 1.7;
+    q.x += Math.cos(ang) * 1.35; q.z += Math.sin(ang) * 1.35;
+    q.tgt = { x: q.x, y: q.y, z: q.z, yaw: q.yaw, pitch: 0 };
+  }
   return q;
 }
 function spawnAt(q) {
@@ -5142,18 +5323,26 @@ function damage(q, dmg, byTeam) {
   q.hp = Math.max(0, q.hp - dmg); q.lastHit = gameTime;
   if (q.local) sfx('hurt'); else sfx('hit');
   if (q.hp <= 0) knockOut(q);
+  else queueVitals(q);
 }
 function knockOut(q) {
   endSkyBoost(q);
+  q.hp = 0;
   q.alive = false; q.respawnT = RESPAWN_TIME; q.item = null; q.dash = 0;
   q.lassoN = 0; q.lassoSlam = null;
   if (q.local) gun.lassoAnim = 0;
   burst(q.x, q.y + 0.4, q.z, 45, skinById(q.skin).color, 9, { life: 0.75, size: 1.15 });
   send({ t: 'ko', id: q.id });
+  queueVitals(q);
   sfx('ko');
   if (q.local) localDie();
 }
-function localDie() { me.alive = false; me.deadT = RESPAWN_TIME; me.item = null; me.dash = 0; sfx('hurt'); }
+function localDie() {
+  if (!me || me.downed) return;
+  me.downed = true;
+  me.alive = false; me.hp = 0; me.deadT = isSurvival() ? 0 : RESPAWN_TIME; me.item = null; me.dash = 0; sfx('hurt');
+  if (isSurvival()) { document.exitPointerLock(); locked = false; }
+}
 
 function detonateMine(m, auth) {
   explodeAt(m.x, m.y, m.z, m.team, auth, MINE_R, 1);
@@ -5379,7 +5568,8 @@ function applyPicked(k, id, type) {
   if (type === 'gun') { q.item = 'gun'; q.itemT = ITEM_TIME; }
   else if (type === 'dash') q.dash = ITEM_TIME;
   else if (type === 'shield') q.shieldT = ITEM_TIME;
-  else if (type === 'bucket') {
+  if (isHost() && (type === 'shield' || type === 'gun')) queueVitals(q);
+  if (type === 'bucket') {
     if (isHost()) { if (mapMode === 'splat') splatBurst(q.x, q.y + 0.4, q.z, 3.2, q.team, true); else forSphere(q.x, q.y + 0.4, q.z, 3.2, i => hostPaint(i, q.team)); }
     burst(q.x, q.y + 0.5, q.z, 50, TEAMS[q.team].css, 9); ring(q.x, q.y + 0.4, q.z, q.team);
   }
@@ -5408,8 +5598,8 @@ function pickNpcTarget(q) {
 }
 function npcUpdate(q, dt) {
   if (q.boulderRide) { q.bombCd -= dt; return; }
-  const diff = npcDiff(); // 0..1 — movement / aggression
-  const aim = npcAim();   // rank-based hit chance (bronze→master)
+  const diff = q.zombie ? (q.zDiff || 0) : npcDiff();
+  const aim = (q.aimRank && NPC_AIM[q.aimRank]) ? NPC_AIM[q.aimRank] : npcAim();
   const a = q.ai;
   a.t -= dt; a.hop -= dt; q.fireCd -= dt;
   if (a.t <= 0 || !a.target) pickNpcTarget(q);
@@ -5532,6 +5722,10 @@ let mouseDown = false, wantBomb = false, jumpBuf = 0, locked = false;
 let joyX = 0, joyY = 0, lookTouch = null, joyTouch = null;
 addEventListener('keydown', e => {
   if (state !== 'game') return;
+  if (me && !me.alive && isSurvival()) {
+    if (e.code === 'ArrowLeft') cycleSpec(-1);
+    if (e.code === 'ArrowRight') cycleSpec(1);
+  }
   keys[e.code] = true;
   if (e.code === 'Space') { jumpBuf = 0.12; e.preventDefault(); if (me && me.alive && me.onGround) sfx('jump'); }
   if (e.code === 'KeyR') startReload();
@@ -6161,11 +6355,13 @@ function updateMe(dt) {
     if (foe) fireCrossbow(me, foe);
   }
   me.bombCd -= dt; me.dash -= dt;
-  if (!isHost()) me.shieldT -= dt;
   if (me.item === 'gun') { me.itemT -= dt; if (me.itemT <= 0) me.item = null; }
   if (!me.alive) {
-    me.deadT -= dt;
-    if (me.deadT <= 0) { spawnAt(me); me.alive = true; if (isHost()) { me.hp = me.maxHp || MAX_HP; me.shieldT = 1.5; } }
+    if (!isSurvival()) me.deadT -= dt;
+    if (me.deadT <= 0 && isHost() && !isSurvival() && !surv) {
+      spawnAt(me); me.alive = true; me.downed = false; me.hp = me.maxHp || MAX_HP; me.shieldT = 1.5;
+      queueVitals(me);
+    }
     wantBomb = false; gun.charging = false; gun.charge = 0; gun.xbowLoaded = false;
     gun.sprayLeft = 0; gun.canonFlight = 0; gun.canonShock = 0; me.canonLift = 0;
     me.lassoN = 0; me.lassoSlam = null;
@@ -6210,14 +6406,42 @@ function updateMe(dt) {
 }
 
 // ===================== Host simulation =====================
-let tickT = 0, flushT = 0, snapT = 0, stT = 0;
+let tickT = 0, flushT = 0, snapT = 0, stT = 0, netSeq = 0;
+const vitalIds = new Set();
+function queueVitals(q) {
+  if (!q || !lobby || lobby.solo || !isHost()) return;
+  vitalIds.add(q.id);
+}
+function flushVitals() {
+  if (!vitalIds.size || !lobby || lobby.solo || !isHost()) { vitalIds.clear(); return; }
+  const pl = [];
+  for (const id of vitalIds) {
+    const q = players.get(id);
+    if (!q) continue;
+    pl.push([q.id, Math.round(Math.max(0, q.hp)), q.alive ? 1 : 0, q.shieldT > 0 ? r2(q.shieldT) : 0, q.item === 'gun' ? 1 : 0, q.alive ? 0 : r2(Math.max(0, q.respawnT))]);
+  }
+  vitalIds.clear();
+  if (pl.length) send({ t: 'hp', seq: ++netSeq, pl });
+}
+function acceptSeq(seq) {
+  if (seq == null) return true;
+  if (acceptSeq.n != null && seq < acceptSeq.n) return false;
+  acceptSeq.n = seq;
+  return true;
+}
 function hostUpdate(dt) {
   if (phase === 'countdown') {
     countdown -= dt;
-    if (countdown <= 0) { phase = 'play'; goT = 0.8; sfx('go'); }
+    if (countdown <= 0) {
+      phase = 'play'; goT = 0.8; sfx('go');
+      if (isSurvival()) spawnSurvivalWave();
+    }
   } else if (phase === 'play') {
-    timeLeft -= dt;
-    if (timeLeft <= 0) { timeLeft = 0; phase = 'over'; overT = 1.6; sfx('time'); }
+    if (isSurvival()) survivalTick(dt);
+    else {
+      timeLeft -= dt;
+      if (timeLeft <= 0) { timeLeft = 0; phase = 'over'; overT = 1.6; sfx('time'); }
+    }
   } else if (phase === 'over') {
     overT -= dt;
     if (overT <= 0) { send({ t: 'end', a: cnt[0], b: cnt[1] }); showResults(cnt[0], cnt[1]); return; }
@@ -6226,14 +6450,17 @@ function hostUpdate(dt) {
     q.shieldT -= dt; q.bombCd -= q.local ? 0 : dt; q.dash -= q.local ? 0 : dt;
     if (q.item === 'gun' && !q.local) { q.itemT -= dt; if (q.itemT <= 0) q.item = null; }
     if (!q.alive) {
-      q.respawnT -= dt;
-      if (q.respawnT <= 0 && !q.local) {
-        q.alive = true; q.hp = q.maxHp || MAX_HP; q.shieldT = 1.5;
-        if (q.npc) spawnAt(q);
+      if (!isSurvival()) {
+        q.respawnT -= dt;
+        if (q.respawnT <= 0 && !q.local) {
+          q.alive = true; q.hp = q.maxHp || MAX_HP; q.shieldT = 1.5;
+          if (q.npc) spawnAt(q);
+          queueVitals(q);
+        }
       }
       continue;
     }
-    if (gameTime - q.lastHit > 3 && q.hp < (q.maxHp || MAX_HP)) q.hp = Math.min(q.maxHp || MAX_HP, q.hp + 20 * dt);
+    if (!q.zombie && gameTime - q.lastHit > 3 && q.hp < (q.maxHp || MAX_HP)) q.hp = Math.min(q.maxHp || MAX_HP, q.hp + 20 * dt);
     if (q.npc && phase === 'play') npcUpdate(q, dt);
     else if (q.npc) { const t = []; moveBody(q, 0, 0, false, dt, t); }
   }
@@ -6244,10 +6471,11 @@ function hostUpdate(dt) {
     if (tickT <= 0) {
       tickT = 0.1;
       send({
-        t: 'tick', time: r2(timeLeft), cd: r2(countdown), ph: phase,
-        pl: [...players.values()].map(q => [q.id, Math.round(q.hp), q.alive ? 1 : 0, q.shieldT > 0 ? r2(q.shieldT) : 0, q.item === 'gun' ? 1 : 0]),
+        t: 'tick', seq: ++netSeq, time: r2(timeLeft), cd: r2(countdown), ph: phase,
+        pl: [...players.values()].map(q => [q.id, Math.round(Math.max(0, q.hp)), q.alive ? 1 : 0, q.shieldT > 0 ? r2(q.shieldT) : 0, q.item === 'gun' ? 1 : 0, q.alive ? 0 : r2(Math.max(0, q.respawnT))]),
         npc: [...players.values()].filter(q => q.npc).map(q => [q.id, r2(q.x), r2(q.y), r2(q.z), r2(q.yaw)]),
         it: items.map(s => s.type || 0),
+        sv: isSurvival() && surv ? { w: surv.wave, c: surv.cleared, l: surv.left } : undefined,
       });
     }
     if (flushT <= 0 && tileQueue.length) { flushT = 0.1; send({ t: 'tiles', c: tileQueue.splice(0) }); }
@@ -6258,7 +6486,7 @@ function sendState(dt) {
   stT -= dt;
   if (stT <= 0 && me) {
     stT = 0.1;
-    send({ t: 'st', x: r2(me.x), y: r2(me.y), z: r2(me.z), yaw: r2(me.yaw), a: me.alive ? 1 : 0 });
+    send({ t: 'st', x: r2(me.x), y: r2(me.y), z: r2(me.z), yaw: r2(me.yaw), pitch: r2(me.pitch), a: me.alive ? 1 : 0 });
   }
 }
 function clientNet(dt) {
@@ -6266,16 +6494,39 @@ function clientNet(dt) {
   if (flushT <= 0 && reqQueue.length) { flushT = 0.1; send({ t: 'paint', c: reqQueue.splice(0) }); }
   if (lobby && !lobby.isHost && performance.now() - lobby.lastHost > 9000) hostGone();
 }
+function applyVitalsRow(id, hp, alive, sh, gun, rs) {
+  const q = players.get(id);
+  if (!q) return;
+  const nowAlive = !!alive;
+  if (q.local) {
+    if (isHost()) return;
+    if (me.alive && !nowAlive) {
+      localDie();
+      me.hp = 0;
+      if (rs != null) me.deadT = rs;
+    } else if (!me.alive && nowAlive) {
+      spawnAt(me);
+      me.alive = true; me.downed = false; me.deadT = 0; me.hp = hp; me.shieldT = sh || 0;
+    } else if (!me.alive) {
+      me.hp = 0;
+      if (rs != null) me.deadT = rs;
+    } else {
+      me.hp = hp; me.shieldT = sh || 0;
+    }
+    return;
+  }
+  q.alive = nowAlive;
+  q.hp = nowAlive ? hp : 0;
+  q.shieldT = sh || 0;
+  q.item = gun ? 'gun' : null;
+}
 function applyTick(m) {
+  if (!acceptSeq(m.seq)) return;
   timeLeft = m.time; countdown = m.cd;
   if (m.ph === 'play' && phase === 'countdown') { phase = 'play'; goT = 0.8; sfx('go'); }
   if (m.ph === 'over' && phase === 'play') { phase = 'over'; sfx('time'); }
-  for (const [id, hp, alive, sh, g] of m.pl) {
-    const q = players.get(id);
-    if (!q) continue;
-    q.hp = hp; q.shieldT = sh;
-    if (!q.local) { q.alive = !!alive; q.item = g ? 'gun' : null; }
-  }
+  for (const [id, hp, alive, sh, g, rs] of m.pl) applyVitalsRow(id, hp, alive, sh, g, rs);
+  if (m.sv) survView = { wave: m.sv.w || 1, cleared: m.sv.c || 0, left: m.sv.l || 0 };
   for (const [id, x, y, z, yaw] of m.npc) {
     const q = players.get(id);
     if (q && !q.local) { q.tgt = { x, y, z, yaw }; q.npc = true; }
@@ -6366,23 +6617,39 @@ function setAccHud(accId) {
 }
 function startGame(list, mapId) {
   clearGame();
+  survEnded = false;
+  spectateId = null;
+  if (isSurvival()) {
+    surv = { wave: 1, cleared: 0, left: 0, breakT: 0, waiting: false, spawned: false, seq: 1 };
+    survView = { wave: 1, cleared: 0, left: 0 };
+    for (const d of list) d.team = 0;
+    TEAMS[1].name = 'ZOMBIE'; TEAMS[1].css = '#8f9a3a'; TEAMS[1].color.set('#8f9a3a');
+    if (typeof shotMats !== 'undefined') {
+      shotMats[1].color.copy(TEAMS[1].color); shotMats[1].emissive.copy(TEAMS[1].color);
+      bombMats[1].color.copy(TEAMS[1].color); bombMats[1].emissive.copy(TEAMS[1].color);
+    }
+  } else surv = null;
   Music.setMode('battle');
   loadMap(mapId || currentMap.id || 'arena');
   resetPaint();
   const slots = [0, 0];
   for (const d of list) players.set(d.id, makePlayer(d, slots[d.team]++));
   me = players.get(myCid);
-  me.gun = profile.gun; me.accessory = profile.accessory;
+  me.gun = profile.gun; me.accessory = profile.accessory; me.gunLv = gunLevel(profile.gun);
   for (const s of items) { s.type = null; s.timer = 3 + rng() * 3; }
   gun.ammo = maxAmmoFor(me); gun.reload = 0; gun.charge = 0; gun.charging = false; gun.autoCd = 0; gun.xbowLoaded = false;
   gun.sprayLeft = 0; gun.canonCd = 0; gun.canonFlight = 0; gun.canonShock = 0; gun.canonDidLift = false;
   timeLeft = MATCH_TIME; countdown = 3; phase = 'countdown'; gameTime = 0; lastHp = MAX_HP;
+  netSeq = 0; acceptSeq.n = 0; vitalIds.clear();
   flashT = 0; flashVisionOn = false;
   const fov = $('flashOverlay'); if (fov) fov.classList.remove('on');
   while (grapples.length) { const g = grapples.pop(); if (g.rope) scene.remove(g.rope); }
   state = 'game';
-  ['nameScreen', 'menuScreen', 'lobbyScreen', 'shopScreen', 'serverPopup', 'resultsScreen'].forEach(id => show(id, false));
+  ['nameScreen', 'menuScreen', 'lobbyScreen', 'shopScreen', 'serverPopup', 'resultsScreen', 'modeScreen', 'viewScreen'].forEach(id => show(id, false));
   show('hud'); show('mapTag'); if ($('mapTag')) $('mapTag').textContent = currentMap.name;
+  show('scorebar', !isSurvival());
+  show('survBox', isSurvival());
+  show('spectateBox', false);
   refreshViewGun();
   tintWeapon(viewGun, me.team);
   $('mapTag').textContent = currentMap.name;
@@ -6390,7 +6657,7 @@ function startGame(list, mapId) {
   const accLab = { grenade: 'BOMB', landmine: 'MINE', jumppad: 'PAD', flashbang: 'FLASH', grappler: 'HOOK', exploder: 'BOOM', boulder: 'ROCK', skyboost: 'SKY' };
   if ($('mBomb')) $('mBomb').textContent = accLab[equippedAcc(me).id] || 'BOMB';
   if ($('pctA')) $('pctA').style.color = '#fff';
-  toast(TEAMS[0].name + ' vs ' + TEAMS[1].name);
+  toast(isSurvival() ? 'SURVIVAL — zombie slimes incoming' : (TEAMS[0].name + ' vs ' + TEAMS[1].name));
   sfx('tick');
   paintRankUI();
   setMobileUI(true);
@@ -6406,17 +6673,20 @@ function showResults(a, b) {
   const prevRank = rankByWins(profile.wins);
   const winner = a > b ? 0 : b > a ? 1 : -1;
   const won = me && winner === me.team;
-  if (won) { profile.wins++; saveProfile(); }
+  if (won) profile.wins++;
+  profile.exp += won ? 10 : 3;
+  saveProfile();
   const rank = rankByWins(profile.wins);
   $('resTitle').textContent = winner === -1 ? 'DRAW!' : won ? 'YOU WIN!' : 'YOU LOSE';
   $('resTitle').style.color = winner === -1 ? '#9aa6b5' : won ? '#3ee68a' : '#ff5a5a';
+  document.querySelectorAll('#resultsScreen .resbar').forEach(el => el.classList.remove('hidden'));
   $('resA').style.width = '0%'; $('resB').style.width = '0%';
   $('resPctA').textContent = Math.round(a / totalTiles * 100) + '%';
   $('resPctB').textContent = Math.round(b / totalTiles * 100) + '%';
   const nextRank = RANKS.find(r => r.wins > profile.wins);
-  let msg = (won ? '+1 WIN! ' : '') + ('You have ' + profile.wins + ' wins - ' + rank.name);
+  let msg = (won ? '+1 COIN · +10 EXP · ' : '+3 EXP · ') + ('You have ' + profile.wins + ' coins - ' + rank.name);
   if (won && rank.id !== prevRank.id) msg += ' - RANK UP!';
-  else if (nextRank) msg += ' - ' + (nextRank.wins - profile.wins) + ' more for ' + nextRank.name;
+  else if (nextRank) msg += ' - ' + (nextRank.wins - profile.wins) + ' more coins for ' + nextRank.name;
 $('resWins').textContent = msg;
   show('resultsScreen');
   sfx(won ? 'win' : winner === -1 ? 'time' : 'lose');
@@ -6503,8 +6773,9 @@ function updateVoteUI() {
   }
   if ($('voteTimer')) $('voteTimer').textContent = String(Math.max(0, Math.ceil(vote.t)));
   const lead = peekLeadingMap();
+  const ask = isSurvival() ? 'Pick the arena' : 'Pick a map!';
   if ($('voteStatus')) $('voteStatus').textContent = vote.done ? ('Starting on ' + lead.name + '!') :
-    (vote.myPick ? ('You voted ' + MAPS.find(x => x.id === vote.myPick).name + ' - leading: ' + lead.name) : ('Pick a map! Leading: ' + lead.name));
+    (vote.myPick ? ('You voted ' + MAPS.find(x => x.id === vote.myPick).name + ' - leading: ' + lead.name) : (ask + ' Leading: ' + lead.name));
 }
 function peekLeadingMap() {
   let bestN = -1;
@@ -6552,7 +6823,7 @@ function finishVote(forcedMap) {
   matchSeed = seed;
   if (lobby && lobby.isHost && !lobby.solo) {
     lobby.inGame = true; announce();
-    send({ t: 'start', players: list, map: mapId, colors, seed });
+    send({ t: 'start', players: list, map: mapId, colors, seed, mode: lobby.mode || 'pvp' });
   }
   setTimeout(() => {
     show('voteScreen', false);
@@ -6566,10 +6837,109 @@ function updateVote(dt) {
   updateVoteUI();
   if (vote.t <= 0 && lobby && lobby.isHost) finishVote();
 }
+function livingMates() {
+  return [...players.values()].filter(q => q.alive && !q.zombie && !q.npc && q.id !== myCid);
+}
+function cycleSpec(dir) {
+  const mates = livingMates();
+  if (!mates.length) return;
+  let i = mates.findIndex(q => q.id === spectateId);
+  if (i < 0) i = 0;
+  else i = (i + dir + mates.length) % mates.length;
+  spectateId = mates[i].id;
+}
+function zombieGunFor(wave) {
+  const steps = [[1, 'paintball'], [4, 'slingshot'], [7, 'bow'], [10, 'spray'], [14, 'shotgun'], [18, 'sniper'], [23, 'rpg'], [28, 'laser'], [34, 'crossbow']];
+  let g = 'paintball';
+  for (const [n, id] of steps) if (wave >= n) g = id;
+  return g;
+}
+function zombieAimFor(wave) {
+  if (wave <= 3) return 'bronze';
+  if (wave <= 7) return 'silver';
+  if (wave <= 12) return 'gold';
+  if (wave <= 18) return 'platinum';
+  if (wave <= 26) return 'diamond';
+  return 'master';
+}
+function spawnSurvivalWave() {
+  if (!isHost() || !surv) return;
+  const wave = surv.wave;
+  const n = Math.min(14, 2 + Math.floor((wave - 1) * 0.5));
+  const hp = 50 + (wave - 1) * 6;
+  const aim = zombieAimFor(wave);
+  const gun = zombieGunFor(wave);
+  const list = [];
+  for (let i = 0; i < n; i++) {
+    const d = {
+      id: 'z-' + (surv.seq++), name: 'Zombie', skin: 'lime', gun,
+      accessory: wave < 9 ? 'grenade' : 'landmine', team: 1, npc: true, zombie: true,
+      hpBonus: hp - MAX_HP, aimRank: aim, zDiff: Math.min(1, (wave - 1) / 36),
+    };
+    players.set(d.id, makePlayer(d, i));
+    list.push(d);
+  }
+  surv.left = n; surv.spawned = true; surv.waiting = false;
+  survView = { wave, cleared: surv.cleared, left: n };
+  send({ t: 'zspawn', wave, cleared: surv.cleared, list });
+  toast('Wave ' + wave);
+}
+function survivalTick(dt) {
+  if (!surv || survEnded) return;
+  if (!livingHumans().some(q => q.alive)) { endSurvival(); return; }
+  const zAlive = [...players.values()].filter(q => q.zombie && q.alive).length;
+  surv.left = zAlive;
+  survView = { wave: surv.wave, cleared: surv.cleared, left: zAlive };
+  if (surv.waiting) {
+    surv.breakT -= dt;
+    if (surv.breakT <= 0) spawnSurvivalWave();
+    return;
+  }
+  if (surv.spawned && zAlive === 0) {
+    surv.cleared += 1;
+    surv.wave += 1;
+    surv.waiting = true;
+    surv.breakT = 2.6;
+    survView = { wave: surv.wave, cleared: surv.cleared, left: 0 };
+    toast('Wave cleared');
+    send({ t: 'swave', wave: surv.wave, cleared: surv.cleared, left: 0 });
+  }
+}
+function livingHumans() {
+  return [...players.values()].filter(q => !q.zombie && !q.npc);
+}
+function endSurvival() {
+  if (survEnded) return;
+  survEnded = true;
+  const waves = surv ? surv.cleared : 0;
+  send({ t: 'survEnd', waves });
+  showSurvivalResults(waves);
+}
+function showSurvivalResults(waves) {
+  if (phase === 'results') return;
+  phase = 'results';
+  Music.setMode('menu');
+  document.exitPointerLock();
+  setMobileUI(false);
+  show('spectateBox', false);
+  const prev = tierByWaves(profile.survivalWaves || 0);
+  const n = Math.max(0, waves | 0);
+  profile.wins += n;
+  profile.exp = (profile.exp || 0) + n * 8;
+  profile.survivalWaves = (profile.survivalWaves || 0) + n;
+  saveProfile();
+  const tier = tierByWaves(profile.survivalWaves);
+  $('resTitle').textContent = n ? (n + ' WAVES') : 'WIPED OUT';
+  $('resTitle').style.color = n ? '#ffd21f' : '#ff5a5a';
+  document.querySelectorAll('#resultsScreen .resbar').forEach(el => el.classList.add('hidden'));
+  $('resWins').textContent = '+' + n + ' coins · +' + (n * 8) + ' EXP · ' + tier.name + (tier.id !== prev.id ? ' · TIER UP!' : '') + ' · ' + profile.survivalWaves + ' waves total';
+  show('resultsScreen');
+  sfx(n ? 'win' : 'lose');
+}
 function startSolo() {
-  lobby = { solo: true, isHost: true };
-  const list = [{ id: myCid, name: profile.name, skin: profile.skin, gun: profile.gun, accessory: profile.accessory, team: 0 }];
-  fillNpcs(list);
+  lobby = { solo: true, isHost: true, mode: gameMode };
+  const list = [{ id: myCid, name: profile.name, skin: profile.skin, gun: profile.gun, accessory: profile.accessory, team: 0, gunLv: gunLevel(profile.gun) }];
+  if (gameMode !== 'survival') fillNpcs(list);
   beginVote(list);
 }
 function fillNpcs(list) {
@@ -6656,8 +7026,8 @@ function send(m) {
 function announce() {
   if (!lobby || !lobby.isHost || lobby.solo || !client) return;
   client.publish(lobbyTopic(lobby.id), JSON.stringify({
-    id: lobby.id, name: profile.name + "'s lobby", count: lobby.roster.length,
-    state: lobby.inGame ? 'playing' : 'waiting', ts: Date.now(),
+    id: lobby.id, name: profile.name + (lobby.mode === 'survival' ? ' survival' : "'s lobby"), count: lobby.roster.length,
+    state: lobby.inGame ? 'playing' : 'waiting', mode: lobby.mode || 'pvp', ts: Date.now(),
   }), { retain: true, qos: 1 });
 }
 
@@ -6687,7 +7057,7 @@ function renderLobbyList() {
     const row = document.createElement('div'); row.className = 'lrow';
     const name = document.createElement('span'); name.textContent = l.name;
     const info = document.createElement('span'); info.className = 'muted';
-    info.textContent = `${l.count}/8 players \u2022 ${l.state === 'playing' ? 'In battle' : 'Waiting'}`;
+    info.textContent = `${l.mode === 'survival' ? 'SURVIVAL' : 'PVP'} · ${l.count}/8 players · ${l.state === 'playing' ? 'In battle' : 'Waiting'}`;
     const btn = document.createElement('button'); btn.className = 'btn green small'; btn.textContent = 'JOIN';
     btn.disabled = l.state === 'playing' || l.count >= 8;
     btn.onclick = () => joinLobby(l.id, l.name);
@@ -6701,8 +7071,8 @@ async function createLobby() {
     $('netStatus').textContent = 'Connecting to the game server...';
     try { useClient(await connectBroker()); } catch (e) { $('netStatus').textContent = 'Could not reach the game server.'; return; }
   }
-  lobby = { id, isHost: true, solo: false, name: profile.name + "'s lobby", inGame: false,
-            roster: [{ cid: myCid, name: profile.name, skin: profile.skin, gun: profile.gun, accessory: profile.accessory, team: 0, seen: performance.now() }] };
+  lobby = { id, isHost: true, solo: false, mode: gameMode, name: profile.name + (gameMode === 'survival' ? ' survival' : "'s lobby"), inGame: false,
+            roster: [{ cid: myCid, name: profile.name, skin: profile.skin, gun: profile.gun, accessory: profile.accessory, team: 0, gunLv: gunLevel(profile.gun), seen: performance.now() }] };
   client.subscribe(roomTopic());
   announce();
   announceTimer = setInterval(announce, 4000);
@@ -6712,9 +7082,9 @@ async function createLobby() {
 }
 function joinLobby(id, name) {
   if (!client || !client.connected) return;
-  lobby = { id, isHost: false, solo: false, name, hostCid: null, roster: [], inGame: false, lastHost: performance.now() };
+  lobby = { id, isHost: false, solo: false, mode: 'pvp', name, hostCid: null, roster: [], inGame: false, lastHost: performance.now() };
   client.subscribe(roomTopic());
-  send({ t: 'join', name: profile.name, skin: profile.skin, gun: profile.gun, accessory: profile.accessory });
+  send({ t: 'join', name: profile.name, skin: profile.skin, gun: profile.gun, accessory: profile.accessory, gunLv: gunLevel(profile.gun) });
   hbTimer = setInterval(lobbyHeartbeat, 1000);
   $('netStatus').textContent = 'Joining...';
   setTimeout(() => {
@@ -6755,11 +7125,11 @@ function removeHuman(cid) {
 }
 function broadcastRoster() {
   if (!lobby || !lobby.isHost) return;
-  send({ t: 'roster', roster: lobby.roster.map(({ cid, name, skin, gun, accessory, team }) => ({ cid, name, skin, gun, accessory, team })), inGame: lobby.inGame, name: lobby.name });
+  send({ t: 'roster', roster: lobby.roster.map(({ cid, name, skin, gun, accessory, team, gunLv }) => ({ cid, name, skin, gun, accessory, team, gunLv: gunLv || 0 })), inGame: lobby.inGame, name: lobby.name, mode: lobby.mode || 'pvp' });
   if (state === 'lobby') showLobby();
 }
 function setTeam(cid, team) {
-  if (!lobby || lobby.inGame) return;
+  if (!lobby || lobby.inGame || lobby.mode === 'survival') return;
   const r = lobby.roster.find(p => p.cid === cid);
   if (!r || r.team === team) return;
   if (lobby.roster.filter(p => p.team === team).length >= 4) { if (cid === myCid) toast('That side is full'); return; }
@@ -6767,8 +7137,9 @@ function setTeam(cid, team) {
   broadcastRoster();
 }
 function hostStart() {
-  const list = lobby.roster.map(r => ({ id: r.cid, name: r.name, skin: r.skin, gun: r.gun || 'paintball', accessory: r.accessory || 'grenade', team: r.team }));
-  fillNpcs(list);
+  const surv = lobby.mode === 'survival';
+  const list = lobby.roster.map(r => ({ id: r.cid, name: r.name, skin: r.skin, gun: r.gun || 'paintball', accessory: r.accessory || 'grenade', team: surv ? 0 : r.team, gunLv: r.gunLv || 0 }));
+  if (!surv) fillNpcs(list);
   beginVote(list);
 }
 const clean = s => String(s || 'Player').replace(/[<>]/g, '').slice(0, 14) || 'Player';
@@ -6785,7 +7156,7 @@ function handle(m) {
         lobby.roster.push({
           cid: m.from, name: clean(m.name), skin: skinById(m.skin).id,
           gun: gunById(m.gun).id, accessory: accById(m.accessory).id,
-          team: a <= b ? 0 : 1, seen: performance.now(),
+          team: lobby.mode === 'survival' ? 0 : (a <= b ? 0 : 1), gunLv: m.gunLv || 0, seen: performance.now(),
         });
         toast(clean(m.name) + ' joined');
       }
@@ -6799,7 +7170,7 @@ function handle(m) {
       if (host) return;
       if (!lobby.hostCid) { lobby.hostCid = m.from; lobby.lastHost = performance.now(); show('serverPopup', false); state = 'lobby'; }
       if (m.from !== lobby.hostCid) return;
-      lobby.roster = m.roster; lobby.inGame = m.inGame; lobby.name = m.name;
+      lobby.roster = m.roster; lobby.inGame = m.inGame; lobby.name = m.name; lobby.mode = m.mode || lobby.mode || 'pvp';
       if (!lobby.roster.find(r => r.cid === myCid)) { toast('You were removed from the lobby'); leaveLobby(true); return; }
       if (state === 'lobby') showLobby();
       break;
@@ -6809,6 +7180,7 @@ function handle(m) {
     case 'voteCounts': if (!host && vote && m.counts) { vote.counts = m.counts; updateVoteUI(); } break;
     case 'start': if (!host && m.from === lobby.hostCid) {
       show('voteScreen', false);
+      if (m.mode) lobby.mode = m.mode;
       if (m.colors) applyTeamColors(m.colors[0], m.colors[1]);
       if (m.seed != null) matchSeed = m.seed >>> 0;
       startGame(m.players, m.map || 'arena');
@@ -6890,7 +7262,7 @@ function handle(m) {
     case 'splat': if (state === 'game' && !host) splatBurst(m.x, m.y, m.z, m.r || 1, m.team, false, m.d || null); break;
     case 'st': {
       const q = players.get(m.from);
-      if (q && !q.local) { q.tgt = { x: m.x, y: m.y, z: m.z, yaw: m.yaw }; if (!host) q.alive = !!m.a; q.seen = performance.now(); }
+      if (q && !q.local) { q.tgt = { x: m.x, y: m.y, z: m.z, yaw: m.yaw, pitch: m.pitch || 0 }; if (!host) q.alive = !!m.a; q.seen = performance.now(); }
       break;
     }
     case 'paint': { if (!host) return; const q = players.get(m.from); if (q) for (const i of m.c) hostPaint(i, q.team); break; }
@@ -6933,56 +7305,176 @@ function handle(m) {
     } break;
     case 'pick': if (host) hostPick(m.i, players.get(m.from)); break;
     case 'picked': if (!host) applyPicked(m.i, m.id, m.type); break;
-    case 'ko': if (!host) { const q = players.get(m.id); if (q) { burst(q.x, q.y + 0.4, q.z, 40, skinById(q.skin).color, 8, { life: 0.7 }); if (q.local) localDie(); else q.alive = false; } } break;
+    case 'ko': if (!host) { const q = players.get(m.id); if (q) { burst(q.x, q.y + 0.4, q.z, 40, skinById(q.skin).color, 8, { life: 0.7 }); q.hp = 0; if (q.local) localDie(); else q.alive = false; } } break;
+    case 'hp': if (!host && state === 'game' && acceptSeq(m.seq)) for (const [id, hp, alive, sh, g, rs] of m.pl) applyVitalsRow(id, hp, alive, sh, g, rs); break;
     case 'tick': if (!host && state === 'game') applyTick(m); break;
     case 'tiles': if (!host && state === 'game') for (let k = 0; k < m.c.length; k += 2) setPaint(m.c[k], m.c[k + 1]); break;
     case 'snap': if (!host && state === 'game') applySnap(m.p); break;
     case 'end': if (!host && state === 'game') showResults(m.a, m.b); break;
+    case 'zspawn':
+      if (!host && state === 'game' && m.list) {
+        survView = { wave: m.wave || 1, cleared: m.cleared || 0, left: m.list.length };
+        m.list.forEach((d, i) => { if (!players.get(d.id)) players.set(d.id, makePlayer(d, i)); });
+        toast('Wave ' + (m.wave || 1));
+      }
+      break;
+    case 'swave':
+      if (!host && state === 'game') { survView = { wave: m.wave || 1, cleared: m.cleared || 0, left: m.left || 0 }; toast('Wave cleared'); }
+      break;
+    case 'survEnd':
+      if (!host && state === 'game') showSurvivalResults(m.waves || 0);
+      break;
   }
 }
 
 // ===================== UI screens =====================
-function paintRankUI() {
-  const r = rankByWins(profile.wins);
-  const next = RANKS.find(x => x.wins > profile.wins);
-  const prevWins = r.wins;
-  const nextWins = next ? next.wins : r.wins;
-  const span = Math.max(1, nextWins - prevWins);
-  const pct = next ? Math.min(100, ((profile.wins - prevWins) / span) * 100) : 100;
-  const starHtml = Array.from({ length: 5 }, (_, i) => i < r.stars ? '<span>\u2605</span>' : '<span class="dim">\u2606</span>').join('');
-  const letter = r.name.charAt(0);
-  const apply = (prefix, compact) => {
-    const nameEl = $(prefix + 'RankName');
-    const starEl = $(prefix + 'RankStars');
-    const medal = $(prefix + 'RankMedal');
-    const fill = $(prefix + 'RankFill');
-    const winsLabel = $(prefix + 'RankWinsLabel');
-    const card = $(prefix === 'menu' ? 'menuRank' : 'hudRank');
-    if (medal) {
-      medal.style.background = `radial-gradient(circle at 35% 30%, #fff8, ${r.color} 45%, ${r.ribbon || r.color})`;
-      medal.style.setProperty('--ribbon', r.ribbon || r.color);
+function drawRankMark(ctx, id, cx, cy) {
+  const ink = '#2b2f3a';
+  const star = (x, y, r, fill) => {
+    ctx.beginPath();
+    for (let i = 0; i < 5; i++) {
+      const a = -Math.PI / 2 + i * Math.PI * 2 / 5;
+      const b = a + Math.PI / 5;
+      const px = x + Math.cos(a) * r, py = y + Math.sin(a) * r;
+      const qx = x + Math.cos(b) * r * 0.42, qy = y + Math.sin(b) * r * 0.42;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      ctx.lineTo(qx, qy);
     }
-    if (nameEl) nameEl.textContent = r.name;
-    if (starEl) starEl.innerHTML = starHtml;
-    if (medal) { medal.textContent = letter; medal.style.background = 'radial-gradient(circle at 35% 30%, #fff8, ' + r.color + ' 45%, #0004)'; medal.style.borderColor = r.color; }
-    if (fill) { fill.style.width = pct + '%'; fill.style.background = 'linear-gradient(90deg, ' + r.color + ', #ffd21f)'; }
-    if (winsLabel) winsLabel.textContent = compact ? (profile.wins + 'W') : (profile.wins + ' wins');
-    if (card) card.style.borderColor = r.color;
+    ctx.closePath();
+    ctx.fillStyle = fill; ctx.fill();
+    ctx.lineWidth = 3.5; ctx.strokeStyle = ink; ctx.lineJoin = 'round'; ctx.stroke();
   };
-  apply('menu', false);
-  apply('hud', true);
-  const nextEl = $('menuRankNext');
-  if (nextEl) nextEl.textContent = next ? ((next.wins - profile.wins) + ' wins to ' + next.name) : 'MAX RANK - hardest NPCs';
+  const stripe = (y, w) => {
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); roundRect(ctx, cx - w / 2, y, w, 8, 3); ctx.fill();
+    ctx.lineWidth = 3; ctx.strokeStyle = ink; ctx.stroke();
+  };
+  if (id === 'rookie') { stripe(cy - 4, 22); return; }
+  if (id === 'bronze') { star(cx, cy, 16, '#fff4d2'); return; }
+  if (id === 'silver') { stripe(cy - 12, 30); stripe(cy + 2, 30); return; }
+  if (id === 'gold') { star(cx, cy, 20, '#fff6c2'); return; }
+  if (id === 'platinum') {
+    ctx.fillStyle = '#fff'; ctx.strokeStyle = ink; ctx.lineWidth = 3.5; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cx - 30, cy + 2); ctx.quadraticCurveTo(cx - 16, cy - 14, cx - 8, cy); ctx.lineTo(cx - 14, cy + 10); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx + 30, cy + 2); ctx.quadraticCurveTo(cx + 16, cy - 14, cx + 8, cy); ctx.lineTo(cx + 14, cy + 10); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    star(cx, cy, 13, '#fff');
+    return;
+  }
+  if (id === 'master' || id === 'survivor') {
+    ctx.beginPath(); ctx.arc(cx, cy, id === 'survivor' ? 22 : 18, 0, Math.PI * 2);
+    ctx.lineWidth = 4; ctx.strokeStyle = ink; ctx.stroke();
+    if (id === 'survivor') {
+      ctx.beginPath(); ctx.arc(cx, cy, 16, 0, Math.PI * 2);
+      ctx.lineWidth = 2.5; ctx.stroke();
+    }
+    star(cx, cy, 11, '#fff');
+    return;
+  }
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - 18); ctx.lineTo(cx + 14, cy); ctx.lineTo(cx, cy + 18); ctx.lineTo(cx - 14, cy);
+  ctx.closePath();
+  ctx.fillStyle = '#f7fdff'; ctx.fill();
+  ctx.lineWidth = 4; ctx.strokeStyle = ink; ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.beginPath(); ctx.moveTo(cx, cy - 18); ctx.lineTo(cx + 14, cy); ctx.lineTo(cx, cy); ctx.closePath(); ctx.fill();
+}
+function drawSlimeBadge(canvas, rank) {
+  if (!canvas || !rank) return;
+  canvas.width = 128; canvas.height = 160;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, 128, 160);
+  const cx = 64;
+  const ribbon = (x, rot) => {
+    ctx.save();
+    ctx.translate(x, 100);
+    ctx.rotate(rot);
+    ctx.beginPath();
+    ctx.moveTo(-7, 0); ctx.lineTo(7, 0); ctx.lineTo(7, 34); ctx.lineTo(0, 26); ctx.lineTo(-7, 34);
+    ctx.closePath();
+    ctx.fillStyle = rank.ribbon || rank.color; ctx.fill();
+    ctx.lineWidth = 3.5; ctx.strokeStyle = '#2b2f3a'; ctx.lineJoin = 'round'; ctx.stroke();
+    ctx.restore();
+  };
+  ribbon(48, -0.18); ribbon(80, 0.18);
+  ctx.beginPath();
+  ctx.moveTo(cx, 14);
+  ctx.lineTo(102, 34); ctx.lineTo(102, 78);
+  ctx.quadraticCurveTo(102, 112, cx, 124);
+  ctx.quadraticCurveTo(26, 112, 26, 78);
+  ctx.lineTo(26, 34);
+  ctx.closePath();
+  const g = ctx.createLinearGradient(64, 14, 64, 124);
+  g.addColorStop(0, '#ffffff');
+  g.addColorStop(0.22, rank.color);
+  g.addColorStop(1, rank.ribbon || rank.color);
+  ctx.fillStyle = g; ctx.fill();
+  ctx.lineWidth = 7; ctx.strokeStyle = '#2b2f3a'; ctx.lineJoin = 'round'; ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.45)';
+  ctx.beginPath(); ctx.ellipse(52, 40, 14, 7, -0.5, 0, Math.PI * 2); ctx.fill();
+  drawRankMark(ctx, rank.id, cx, 70);
+}
+function paintRankCard(prefix, rank, valueText, pct, nextText) {
+  const nameEl = $(prefix + 'RankName');
+  const starEl = $(prefix + 'RankStars');
+  const medal = $(prefix + 'RankMedal');
+  const fill = $(prefix + 'RankFill');
+  const winsLabel = $(prefix + 'RankWinsLabel');
+  const card = $(prefix === 'menu' ? 'menuRank' : prefix === 'surv' ? 'survRank' : 'hudRank');
+  const stars = Array.from({ length: 5 }, (_, i) => i < (rank.stars || 0) ? '<span>\u2605</span>' : '<span class="dim">\u2606</span>').join('');
+  if (medal) {
+    medal.style.setProperty('--ribbon', rank.ribbon || rank.color);
+    medal.style.borderColor = rank.color;
+    const cv = medal.querySelector('canvas');
+    if (cv) drawSlimeBadge(cv, rank);
+  }
+  if (nameEl) nameEl.textContent = rank.name;
+  if (starEl) starEl.innerHTML = stars;
+  if (fill) { fill.style.width = pct + '%'; fill.style.background = 'linear-gradient(90deg, ' + rank.color + ', #fff)'; }
+  if (winsLabel) winsLabel.textContent = valueText;
+  if (card) card.style.borderColor = rank.color;
+  if (nextText && $(prefix + 'RankNext')) $(prefix + 'RankNext').textContent = nextText;
+}
+function paintRankUI() {
+  const coins = profile.wins;
+  const r = rankByWins(coins);
+  const next = RANKS.find(x => x.wins > coins);
+  const span = Math.max(1, (next ? next.wins : r.wins) - r.wins);
+  const pct = next ? Math.min(100, ((coins - r.wins) / span) * 100) : 100;
+  paintRankCard('menu', r, coins + ' coins', pct, next ? ((next.wins - coins) + ' coins to ' + next.name) : 'MAX RANK');
+  const waves = profile.survivalWaves || 0;
+  const tier = tierByWaves(waves);
+  const nextTier = SURVIVAL_TIERS.find(x => x.waves > waves);
+  const tSpan = Math.max(1, (nextTier ? nextTier.waves : tier.waves) - tier.waves);
+  const tpct = nextTier ? Math.min(100, ((waves - tier.waves) / tSpan) * 100) : 100;
+  paintRankCard('surv', tier, waves + ' waves', tpct, nextTier ? ((nextTier.waves - waves) + ' waves to ' + nextTier.name) : 'SURVIVOR');
+  const hudSurv = state === 'game' && isSurvival();
+  paintRankCard('hud', hudSurv ? tier : r, hudSurv ? (waves + 'W') : (coins + ' coins'), hudSurv ? tpct : pct, '');
   const ladder = $('menuRankLadder');
   if (ladder) {
     ladder.innerHTML = '';
     for (const x of RANKS) {
       const chip = document.createElement('span');
-      chip.className = 'rankChip' + (x.id === r.id ? ' on' : (profile.wins >= x.wins ? ' done' : ''));
+      chip.className = 'rankChip' + (x.id === r.id ? ' on' : (coins >= x.wins ? ' done' : ''));
       chip.textContent = x.name;
       chip.style.borderColor = x.color;
       if (x.id === r.id) { chip.style.background = x.color; chip.style.color = '#2b2f3a'; }
       ladder.appendChild(chip);
+    }
+  }
+  const slab = $('survRankLadder');
+  if (slab) {
+    slab.innerHTML = '';
+    for (const x of SURVIVAL_TIERS) {
+      const chip = document.createElement('span');
+      chip.className = 'rankChip' + (x.id === tier.id ? ' on' : (waves >= x.waves && x.waves > 0 ? ' done' : ''));
+      chip.textContent = x.name;
+      chip.style.borderColor = x.color;
+      if (x.id === tier.id) { chip.style.background = x.color; chip.style.color = '#2b2f3a'; }
+      slab.appendChild(chip);
     }
   }
 }
@@ -6991,10 +7483,15 @@ function goMenu() {
   state = 'menu';
   Music.setMode('menu');
   setMobileUI(false);
-  ['nameScreen', 'lobbyScreen', 'shopScreen', 'serverPopup', 'hud', 'resultsScreen'].forEach(id => show(id, false));
+  ['nameScreen', 'lobbyScreen', 'shopScreen', 'serverPopup', 'hud', 'resultsScreen', 'modeScreen', 'viewScreen'].forEach(id => show(id, false));
   show('menuScreen');
   $('menuName').textContent = profile.name;
   $('menuWins').textContent = profile.wins;
+  if ($('menuExp')) $('menuExp').textContent = profile.exp || 0;
+  if ($('modeNow')) $('modeNow').textContent = gameMode === 'survival' ? 'SURVIVAL' : 'PVP';
+  if ($('modeBlurb')) $('modeBlurb').textContent = gameMode === 'survival'
+    ? 'Survival · one team · no NPCs · zombie waves until you fall · coins = waves cleared'
+    : 'PVP · 4 vs 4 · vote a map · random team colors · 60s · most paint wins';
   $('menuSkin').textContent = skinById(profile.skin).name;
   $('menuGun').textContent = gunById(profile.gun).name;
   $('menuAcc').textContent = accById(profile.accessory).name;
@@ -7026,6 +7523,214 @@ $('btnMulti').onclick = openServers;
 $('btnCloseServers').onclick = () => show('serverPopup', false);
 $('btnCreate').onclick = createLobby;
 $('btnShop').onclick = () => { state = 'shop'; show('menuScreen', false); show('shopScreen'); renderShop(); };
+$('btnMode').onclick = () => {
+  state = 'menu';
+  show('menuScreen', false); show('modeScreen');
+  paintModePics();
+  $('modePvp').classList.toggle('on', gameMode === 'pvp');
+  $('modeSurv').classList.toggle('on', gameMode === 'survival');
+};
+$('btnModeBack').onclick = goMenu;
+$('modePvp').onclick = () => pickMode('pvp');
+$('modeSurv').onclick = () => pickMode('survival');
+$('btnViewClose').onclick = () => show('viewScreen', false);
+$('btnUpgrade').onclick = upgradeViewGun;
+$('specPrev').onclick = () => cycleSpec(-1);
+$('specNext').onclick = () => cycleSpec(1);
+function paintModePics() {
+  const sky = (ctx, w, h) => {
+    ctx.fillStyle = '#d7f1ff'; ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#c5e4b8'; ctx.fillRect(0, h - 28, w, 28);
+    ctx.strokeStyle = '#2b2f3a'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(0, h - 28); ctx.lineTo(w, h - 28); ctx.stroke();
+  };
+  const badge = (ctx, n) => {
+    ctx.fillStyle = '#2b2f3a';
+    ctx.beginPath(); ctx.arc(22, 22, 14, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = '900 16px Segoe UI, Arial';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(String(n), 22, 23);
+  };
+  const slime = (ctx, x, y, r, color, kind) => {
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.ellipse(x, y, r, r * 0.78, 0, 0, Math.PI * 2);
+    strokeFill(ctx, '#2b2f3a', Math.max(3, r * 0.1));
+    ctx.fillStyle = 'rgba(255,255,255,0.42)';
+    ctx.beginPath(); ctx.ellipse(x - r * 0.28, y - r * 0.3, r * 0.2, r * 0.1, -0.6, 0, Math.PI * 2); ctx.fill();
+    if (kind === 'dead') {
+      ctx.fillStyle = '#efe2c4';
+      for (let i = 0; i < 3; i++) {
+        roundRect(ctx, x - r * 0.42, y - r * 0.02 + i * r * 0.16, r * 0.84, Math.max(3, r * 0.08), 2);
+        strokeFill(ctx, '#2b2f3a', 2);
+      }
+      ctx.fillStyle = '#8f342c';
+      roundRect(ctx, x + r * 0.2, y + r * 0.28, r * 0.16, r * 0.42, 3);
+      strokeFill(ctx, '#2b2f3a', 2);
+      ctx.fillStyle = '#140e0c';
+      ctx.beginPath(); ctx.arc(x - r * 0.22, y - r * 0.16, Math.max(2, r * 0.07), 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#2b2f3a'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(x + r * 0.05, y - r * 0.16); ctx.lineTo(x + r * 0.3, y - r * 0.16); ctx.stroke();
+      return;
+    }
+    const eye = ex => {
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(x + ex, y - r * 0.06, r * 0.15, 0, Math.PI * 2);
+      strokeFill(ctx, '#2b2f3a', 2);
+      ctx.fillStyle = kind === 'npc' ? '#8b95a6' : '#1a1c22';
+      ctx.beginPath(); ctx.arc(x + ex, y - r * 0.03, r * 0.06, 0, Math.PI * 2); ctx.fill();
+    };
+    eye(-r * 0.26); eye(r * 0.26);
+    ctx.strokeStyle = '#2b2f3a'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(x, y + r * 0.2, r * 0.14, 0.25, Math.PI - 0.25); ctx.stroke();
+  };
+  const block = (ctx, x, y, s, color) => {
+    ctx.fillStyle = color;
+    roundRect(ctx, x, y, s, s, 5); strokeFill(ctx, '#2b2f3a', 3);
+    ctx.fillStyle = 'rgba(255,255,255,0.38)';
+    roundRect(ctx, x + 3, y + 3, s - 6, s * 0.28, 3); ctx.fill();
+  };
+  const paint = (id, draw) => {
+    const c = $(id); if (!c || c.dataset.drawn) return;
+    c.dataset.drawn = '1';
+    const ctx = c.getContext('2d');
+    sky(ctx, c.width, c.height);
+    draw(ctx, c.width, c.height);
+  };
+  paint('pvpPic1', (ctx, w, h) => {
+    badge(ctx, 1);
+    slime(ctx, 70, 78, 28, '#ffd21f');
+    slime(ctx, 118, 96, 24, '#ffb703');
+    ctx.fillStyle = '#2b2f3a'; ctx.font = '900 18px Segoe UI, Arial'; ctx.textAlign = 'center';
+    ctx.fillText('VS', w / 2, 78);
+    slime(ctx, 196, 78, 28, '#ff4fa3');
+    slime(ctx, 246, 96, 22, '#c9d0dc', 'npc');
+    ctx.font = '900 11px Segoe UI, Arial'; ctx.fillStyle = '#2b2f3a';
+    ctx.fillText('NPC', 246, 58);
+  });
+  paint('pvpPic2', (ctx, w, h) => {
+    badge(ctx, 2);
+    const card = (x, colors, on) => {
+      ctx.fillStyle = on ? '#eafff0' : '#fff';
+      roundRect(ctx, x, 36, 78, 100, 10); strokeFill(ctx, on ? '#1fa85a' : '#2b2f3a', on ? 5 : 3);
+      colors.forEach((col, i) => block(ctx, x + 10 + (i % 2) * 30, 48 + Math.floor(i / 2) * 28, 24, col));
+      if (on) {
+        ctx.fillStyle = '#1fa85a';
+        ctx.beginPath(); ctx.arc(x + 64, 122, 12, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(x + 58, 122); ctx.lineTo(x + 62, 127); ctx.lineTo(x + 72, 116); ctx.stroke();
+      }
+    };
+    card(24, ['#7ad6ff', '#5be35b', '#ffd21f', '#ff8a3a'], false);
+    card(111, ['#ff4fa3', '#7ad6ff', '#ffd21f', '#5be35b'], true);
+    card(198, ['#c47cff', '#ff8a3a', '#3ee68a', '#2f9fff'], false);
+  });
+  paint('pvpPic3', (ctx, w, h) => {
+    badge(ctx, 3);
+    slime(ctx, 62, 92, 32, '#7ad6ff');
+    ctx.fillStyle = '#5be35b';
+    roundRect(ctx, 78, 78, 46, 16, 5); strokeFill(ctx, '#2b2f3a', 3);
+    ctx.fillStyle = '#8a94a4';
+    roundRect(ctx, 118, 76, 28, 12, 4); strokeFill(ctx, '#2b2f3a', 2);
+    ctx.fillStyle = '#ff4fa3';
+    ctx.beginPath(); ctx.arc(162, 70, 7, 0, Math.PI * 2); strokeFill(ctx, '#2b2f3a', 2);
+    ctx.beginPath(); ctx.arc(176, 84, 6, 0, Math.PI * 2); strokeFill(ctx, '#2b2f3a', 2);
+    [[190, 52, '#fff'], [214, 52, '#ff4fa3'], [238, 52, '#ffd21f'],
+     [190, 78, '#7ad6ff'], [214, 78, '#fff'], [238, 78, '#5be35b'],
+     [190, 104, '#ff8a3a'], [214, 104, '#ff4fa3'], [238, 104, '#fff']].forEach(([x, y, col]) => block(ctx, x, y, 22, col));
+    ctx.fillStyle = '#2b2f3a'; roundRect(ctx, 118, 18, 52, 24, 8); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = '900 14px Segoe UI, Arial'; ctx.textAlign = 'center';
+    ctx.fillText('60s', 144, 31);
+  });
+  paint('pvpPic4', (ctx, w, h) => {
+    badge(ctx, 4);
+    const stack = (x, n, colors) => { for (let i = 0; i < n; i++) block(ctx, x, 112 - i * 26, 24, colors[i % colors.length]); };
+    stack(48, 4, ['#ffd21f', '#ff4fa3', '#7ad6ff', '#5be35b']);
+    stack(78, 4, ['#ff8a3a', '#ffd21f', '#ff4fa3', '#3ee68a']);
+    stack(168, 2, ['#d0d8e4', '#fff']);
+    ctx.fillStyle = '#ffd21f';
+    ctx.beginPath(); ctx.arc(118, 58, 16, 0, Math.PI * 2); strokeFill(ctx, '#2b2f3a', 3);
+    ctx.fillStyle = '#2b2f3a'; ctx.font = '900 14px Segoe UI, Arial'; ctx.textAlign = 'center';
+    ctx.fillText('C', 118, 59);
+    ctx.font = '900 13px Segoe UI, Arial';
+    ctx.fillText('+ EXP', 118, 92);
+    ctx.fillStyle = '#ffd21f';
+    ctx.beginPath();
+    ctx.moveTo(40, 36); ctx.lineTo(52, 18); ctx.lineTo(64, 36); ctx.lineTo(76, 18); ctx.lineTo(88, 36); ctx.lineTo(100, 18); ctx.lineTo(112, 36);
+    ctx.closePath(); strokeFill(ctx, '#2b2f3a', 3);
+  });
+  paint('survPic1', (ctx, w, h) => {
+    badge(ctx, 1);
+    slime(ctx, 70, 96, 30, '#7ad6ff');
+    slime(ctx, 124, 90, 34, '#ffd21f');
+    slime(ctx, 180, 98, 28, '#5be35b');
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    slime(ctx, 246, 70, 16, '#ff4fa3');
+    slime(ctx, 270, 86, 14, '#c47cff');
+    ctx.restore();
+    ctx.strokeStyle = '#ff5a5a'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(232, 52); ctx.lineTo(284, 104); ctx.moveTo(284, 52); ctx.lineTo(232, 104); ctx.stroke();
+  });
+  paint('survPic2', (ctx, w, h) => {
+    badge(ctx, 2);
+    const card = (x, colors, on) => {
+      ctx.fillStyle = on ? '#eafff0' : '#fff';
+      roundRect(ctx, x, 36, 78, 100, 10); strokeFill(ctx, on ? '#1fa85a' : '#2b2f3a', on ? 5 : 3);
+      colors.forEach((col, i) => block(ctx, x + 14 + (i % 2) * 28, 50 + Math.floor(i / 2) * 30, 24, col));
+      if (on) {
+        ctx.fillStyle = '#1fa85a';
+        ctx.beginPath(); ctx.arc(x + 64, 122, 12, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(x + 58, 122); ctx.lineTo(x + 62, 127); ctx.lineTo(x + 72, 116); ctx.stroke();
+      }
+    };
+    card(24, ['#b7c4d4', '#8ea0b5', '#d7e2ee', '#9aabbd'], false);
+    card(111, ['#6d7a30', '#c47a3a', '#3d4a18', '#8f9a3a'], true);
+    card(198, ['#d8c3a5', '#8d6a45', '#efe2c4', '#6b4a32'], false);
+  });
+  paint('survPic3', (ctx, w, h) => {
+    badge(ctx, 3);
+    slime(ctx, 58, 98, 30, '#7ad6ff');
+    ctx.fillStyle = '#5be35b';
+    roundRect(ctx, 74, 86, 40, 14, 4); strokeFill(ctx, '#2b2f3a', 3);
+    ctx.fillStyle = '#ffd21f';
+    ctx.beginPath(); ctx.arc(128, 78, 6, 0, Math.PI * 2); strokeFill(ctx, '#2b2f3a', 2);
+    slime(ctx, 168, 100, 26, '#5c5844', 'dead');
+    slime(ctx, 214, 108, 18, '#4a4636', 'dead');
+    slime(ctx, 250, 114, 12, '#3a382c', 'dead');
+    ctx.fillStyle = '#2b2f3a'; ctx.font = '900 12px Segoe UI, Arial'; ctx.textAlign = 'center';
+    ctx.fillText('1', 168, 62); ctx.fillText('2', 214, 78); ctx.fillText('3', 250, 92);
+  });
+  paint('survPic4', (ctx, w, h) => {
+    badge(ctx, 4);
+    ctx.fillStyle = '#2b2f3a'; roundRect(ctx, 28, 40, 70, 28, 8); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = '900 16px Segoe UI, Arial'; ctx.textAlign = 'center';
+    ctx.fillText('WAVE', 63, 55);
+    ctx.strokeStyle = '#2b2f3a'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(108, 54); ctx.lineTo(136, 54); ctx.lineTo(128, 46); ctx.moveTo(136, 54); ctx.lineTo(128, 62); ctx.stroke();
+    for (let i = 0; i < 3; i++) {
+      ctx.fillStyle = '#ffd21f';
+      ctx.beginPath(); ctx.arc(168 + i * 28, 54, 14, 0, Math.PI * 2); strokeFill(ctx, '#2b2f3a', 3);
+      ctx.fillStyle = '#2b2f3a'; ctx.font = '900 13px Segoe UI, Arial';
+      ctx.fillText('C', 168 + i * 28, 55);
+    }
+    slime(ctx, 70, 112, 22, '#7ad6ff');
+    ctx.strokeStyle = '#2b2f3a'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.ellipse(150, 108, 16, 10, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(150, 108, 5, 0, Math.PI * 2); ctx.fill();
+    slime(ctx, 214, 116, 20, '#5be35b');
+    ctx.font = '900 11px Segoe UI, Arial'; ctx.fillStyle = '#2b2f3a';
+    ctx.fillText('WATCH', 176, 86);
+  });
+}
+function pickMode(mode) {
+  gameMode = mode === 'survival' ? 'survival' : 'pvp';
+  profile.mode = gameMode; saveProfile();
+  $('modePvp').classList.toggle('on', gameMode === 'pvp');
+  $('modeSurv').classList.toggle('on', gameMode === 'survival');
+  if ($('modeNow')) $('modeNow').textContent = gameMode === 'survival' ? 'SURVIVAL' : 'PVP';
+  toast(gameMode === 'survival' ? 'Survival selected' : 'PVP selected');
+}
 $('btnShopBack').onclick = goMenu;
 $('tabSkins').onclick = () => { shopTab = 'skins'; renderShop(); };
 $('tabGuns').onclick = () => { shopTab = 'guns'; renderShop(); };
@@ -7037,13 +7742,20 @@ $('joinA').onclick = () => { if (!lobby) return; if (lobby.isHost) setTeam(myCid
 $('joinB').onclick = () => { if (!lobby) return; if (lobby.isHost) setTeam(myCid, 1); else send({ t: 'team', team: 1 }); };
 
 function showLobby() {
-  ['menuScreen', 'serverPopup', 'shopScreen', 'hud', 'resultsScreen'].forEach(id => show(id, false));
+  ['menuScreen', 'serverPopup', 'shopScreen', 'hud', 'resultsScreen', 'modeScreen'].forEach(id => show(id, false));
   show('lobbyScreen');
+  const survLobby = lobby.mode === 'survival';
   $('lobbyTitle').textContent = lobby.name || 'Lobby';
-  for (const [t, el] of [[0, $('slotsA')], [1, $('slotsB')]]) {
+  $('lobbyBlurb').textContent = survLobby
+    ? 'One team. No NPCs. Friends can join until you start, then you vote for an arena and fight zombies together.'
+    : 'Pick your side. Empty slots are filled with NPCs when the battle starts.';
+  $('lobbyTeamA').textContent = survLobby ? 'YOUR TEAM' : 'TEAM A';
+  show('teamColB', !survLobby);
+  show('joinA', !survLobby);
+  show('joinB', !survLobby);
+  const fillSlots = (el, members, emptyLabel, cap) => {
     el.innerHTML = '';
-    const members = lobby.roster.filter(r => r.team === t);
-    for (let k = 0; k < 4; k++) {
+    for (let k = 0; k < cap; k++) {
       const r = members[k];
       const d = document.createElement('div');
       d.className = 'slot' + (r ? '' : ' npc');
@@ -7054,30 +7766,107 @@ function showLobby() {
         const isHostRow = lobby.isHost ? r.cid === myCid : r.cid === lobby.hostCid;
         if (isHostRow || r.cid === myCid) {
           const tag = document.createElement('span'); tag.className = 'tag';
-          tag.textContent = isHostRow && r.cid === myCid ? 'YOU \u2022 HOST' : isHostRow ? 'HOST' : 'YOU';
+          tag.textContent = isHostRow && r.cid === myCid ? 'YOU · HOST' : isHostRow ? 'HOST' : 'YOU';
           d.append(tag);
         }
-      } else d.textContent = 'NPC';
+      } else d.textContent = emptyLabel;
       el.append(d);
     }
+  };
+  if (survLobby) fillSlots($('slotsA'), lobby.roster, 'OPEN', Math.max(4, Math.min(8, lobby.roster.length)));
+  else {
+    fillSlots($('slotsA'), lobby.roster.filter(r => r.team === 0), 'NPC', 4);
+    fillSlots($('slotsB'), lobby.roster.filter(r => r.team === 1), 'NPC', 4);
   }
   const mine = lobby.roster.find(r => r.cid === myCid);
   $('joinA').disabled = !mine || mine.team === 0;
   $('joinB').disabled = !mine || mine.team === 1;
+  if ($('btnStart')) $('btnStart').textContent = survLobby ? 'START SURVIVAL' : 'START BATTLE';
   show('btnStart', !!lobby.isHost);
   show('waitHost', !lobby.isHost);
 }
 
+function shopCardButtons(parent, equip, view) {
+  const row = document.createElement('div'); row.className = 'cardBtns';
+  const b1 = document.createElement('button'); b1.className = 'btn green small'; b1.type = 'button'; b1.textContent = 'EQUIP';
+  const b2 = document.createElement('button'); b2.className = 'btn yellow small'; b2.type = 'button'; b2.textContent = 'VIEW';
+  b1.onclick = e => { e.stopPropagation(); equip(); };
+  b2.onclick = e => { e.stopPropagation(); view(); };
+  row.append(b1, b2); parent.append(row);
+}
+function openView(kind, id) {
+  viewItem = { kind, id };
+  const cv = $('viewCanvas');
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = '#e7f3ff'; ctx.fillRect(0, 0, cv.width, cv.height);
+  if (kind === 'skin') {
+    const s = skinById(id);
+    $('viewTitle').textContent = s.name;
+    ctx.fillStyle = s.color; ctx.beginPath(); ctx.arc(140, 96, 58, 0, Math.PI * 2); ctx.fill();
+    ctx.lineWidth = 6; ctx.strokeStyle = '#2b2f3a'; ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(120, 86, 12, 0, 7); ctx.arc(160, 86, 12, 0, 7); ctx.fill();
+    ctx.fillStyle = '#1a1c22';
+    ctx.beginPath(); ctx.arc(122, 88, 5, 0, 7); ctx.arc(162, 88, 5, 0, 7); ctx.fill();
+    $('viewStats').textContent = s.name + ' skin. Color ' + s.color + '. Costs ' + s.wins + ' coins.';
+    show('btnUpgrade', false);
+  } else if (kind === 'gun') {
+    const g = gunById(id);
+    const lv = gunLevel(g.id);
+    const up = equippedGun({ local: true, gun: g.id });
+    $('viewTitle').textContent = g.name;
+    const icon = makeShopIcon(g.id);
+    ctx.drawImage(icon, 40, 6, 200, 168);
+    const cost = upgradeCost(lv);
+    $('viewStats').innerHTML = [
+      'Damage ' + g.dmg + (lv ? (' → ' + up.dmg + '  (Lv ' + lv + ')') : ''),
+      g.scopeDmg ? ('Scoped damage ' + up.scopeDmg) : '',
+      g.maxDmg ? ('Charged damage up to ' + up.maxDmg) : '',
+      g.sweepDmg ? ('Sweep damage ' + up.sweepDmg) : '',
+      'Ammo ' + (g.ammo || 'infinite') + ' · rate ' + g.rate + 's',
+      g.desc,
+      'EXP ' + (profile.exp || 0) + (lv >= GUN_MAX_LV ? ' · MAX LEVEL' : (' · upgrade costs ' + cost)),
+    ].filter(Boolean).join('<br>');
+    show('btnUpgrade', true);
+    $('btnUpgrade').textContent = lv >= GUN_MAX_LV ? 'MAX' : ('UPGRADE ' + cost + ' EXP');
+  } else {
+    const a = accById(id);
+    $('viewTitle').textContent = a.name;
+    const icon = makeShopIcon(a.id);
+    ctx.drawImage(icon, 40, 6, 200, 168);
+    $('viewStats').textContent = a.desc + ' Costs ' + a.wins + ' coins.';
+    show('btnUpgrade', false);
+  }
+  show('viewScreen');
+}
+function upgradeViewGun() {
+  if (!viewItem || viewItem.kind !== 'gun') return;
+  const id = viewItem.id;
+  const lv = gunLevel(id);
+  if (lv >= GUN_MAX_LV) { toast('That gun is maxed'); return; }
+  const cost = upgradeCost(lv);
+  if ((profile.exp || 0) < cost) { toast('Need ' + cost + ' EXP'); return; }
+  profile.exp -= cost;
+  profile.gunLv[id] = lv + 1;
+  saveProfile();
+  sfx('equip');
+  toast(gunById(id).name + ' is now level ' + profile.gunLv[id]);
+  if ($('shopExp')) $('shopExp').textContent = profile.exp;
+  if ($('menuExp')) $('menuExp').textContent = profile.exp;
+  openView('gun', id);
+}
 function renderShop() {
   $('shopWins').textContent = profile.wins;
+  if ($('shopExp')) $('shopExp').textContent = profile.exp || 0;
   $('tabSkins').classList.toggle('on', shopTab === 'skins');
   $('tabGuns').classList.toggle('on', shopTab === 'guns');
   $('tabAcc').classList.toggle('on', shopTab === 'acc');
   const titles = { skins: 'SKIN SHOP', guns: 'GUN SHOP', acc: 'ACCESSORY SHOP' };
   const hints = {
-    skins: 'Win battles to unlock skins.',
-    guns: 'Paintball Gun is your free starter — you can always switch back to it.',
-    acc: 'Right-click / Q uses your accessory. Sky Boost launches you up, then you drift down painting the path. Boulder drags foes and wall-booms.',
+    skins: 'Spend coins to unlock skins. Click one, then View.',
+    guns: 'Paintball Gun is free. View a gun to see its stats and spend EXP on damage.',
+    acc: 'Right-click / Q uses your accessory. Click one, then View.',
   };
   $('shopTitle').textContent = titles[shopTab];
   $('shopTitle').style.color = shopTab === 'guns' ? '#ffd21f' : shopTab === 'acc' ? '#3ee68a' : '#ff4fa3';
@@ -7092,12 +7881,13 @@ function renderShop() {
       const blob = document.createElement('div'); blob.className = 'blob'; blob.style.background = skinCss(s);
       const nm = document.createElement('b'); nm.textContent = s.name;
       const info = document.createElement('div'); info.className = 'muted';
-      info.textContent = sel ? 'EQUIPPED' : unlocked ? 'Click to equip' : `Needs ${s.wins} wins`;
+      info.textContent = sel ? 'EQUIPPED' : unlocked ? (shopPick === s.id ? 'Equip or view' : 'Click to choose') : `Needs ${s.wins} coins`;
       d.append(blob, nm, info);
       d.onclick = () => {
-        if (!unlocked) { toast(`Need ${s.wins - profile.wins} more wins for ${s.name}`); return; }
-        profile.skin = s.id; saveProfile(); renderShop(); sfx('equip');
+        if (!unlocked) { toast(`Need ${Math.max(0, s.wins - profile.wins)} more coins for ${s.name}`); return; }
+        shopPick = s.id; renderShop();
       };
+      if (unlocked && shopPick === s.id) shopCardButtons(d, () => { profile.skin = s.id; saveProfile(); renderShop(); sfx('equip'); }, () => openView('skin', s.id));
       grid.append(d);
     }
   } else if (shopTab === 'guns') {
@@ -7110,18 +7900,20 @@ function renderShop() {
       const nm = document.createElement('b'); nm.textContent = gdef.name;
       const info = document.createElement('div'); info.className = 'muted';
       info.textContent = unlocked
-        ? (sel ? 'EQUIPPED · ' + gdef.desc : gdef.desc)
-        : `Needs ${gdef.wins} wins`;
+        ? (sel ? 'EQUIPPED' : (shopPick === gdef.id ? 'Equip or view' : 'Click to choose'))
+        : `Needs ${gdef.wins} coins`;
       if (gdef.starter) {
         const badge = document.createElement('div'); badge.className = 'starterBadge'; badge.textContent = 'STARTER';
         d.append(badge);
       }
       d.append(icon, nm, info);
       d.onclick = () => {
-        if (!unlocked) { toast(`Need ${gdef.wins} wins for ${gdef.name}`); return; }
-        profile.gun = gdef.id; saveProfile(); renderShop(); sfx('equip');
-        toast(sel ? `${gdef.name} already equipped` : `Equipped ${gdef.name}`);
+        if (!unlocked) { toast(`Need ${gdef.wins} coins for ${gdef.name}`); return; }
+        shopPick = gdef.id; renderShop();
       };
+      if (unlocked && shopPick === gdef.id) shopCardButtons(d,
+        () => { profile.gun = gdef.id; saveProfile(); renderShop(); sfx('equip'); toast(`Equipped ${gdef.name}`); },
+        () => openView('gun', gdef.id));
       grid.append(d);
     }
   } else {
@@ -7133,17 +7925,19 @@ function renderShop() {
       const icon = makeShopIcon(a.id);
       const nm = document.createElement('b'); nm.textContent = a.name;
       const info = document.createElement('div'); info.className = 'muted';
-      info.textContent = sel ? 'EQUIPPED' : unlocked ? a.desc : `Needs ${a.wins} wins`;
+      info.textContent = sel ? 'EQUIPPED' : unlocked ? (shopPick === a.id ? 'Equip or view' : 'Click to choose') : `Needs ${a.wins} coins`;
       if (a.starter) {
         const badge = document.createElement('div'); badge.className = 'starterBadge'; badge.textContent = 'STARTER';
         d.append(badge);
       }
       d.append(icon, nm, info);
       d.onclick = () => {
-        if (!unlocked) { toast(`Need ${a.wins} wins for ${a.name}`); return; }
-        profile.accessory = a.id; saveProfile(); renderShop(); setAccHud(a.id); sfx('equip');
-        toast(sel ? `${a.name} already equipped` : `Equipped ${a.name}`);
+        if (!unlocked) { toast(`Need ${a.wins} coins for ${a.name}`); return; }
+        shopPick = a.id; renderShop();
       };
+      if (unlocked && shopPick === a.id) shopCardButtons(d,
+        () => { profile.accessory = a.id; saveProfile(); renderShop(); setAccHud(a.id); sfx('equip'); toast(`Equipped ${a.name}`); },
+        () => openView('acc', a.id));
       grid.append(d);
     }
   }
@@ -7156,8 +7950,22 @@ function updateHud(dt) {
   $('pctA').textContent = TEAMS[0].name + ' ' + Math.round(pa * 100) + '%';
   $('pctB').textContent = TEAMS[1].name + ' ' + Math.round(pb * 100) + '%';
   const secs = Math.ceil(timeLeft);
-  $('timer').textContent = secs;
-  $('timer').classList.toggle('urgent', secs <= 10 && phase === 'play');
+  if (isSurvival()) {
+    const s = (isHost() && surv) ? surv : survView;
+    $('timer').textContent = 'W' + (s.wave || 1);
+    $('timer').classList.remove('urgent');
+    if ($('survWave')) $('survWave').textContent = s.wave || 1;
+    if ($('survLeft')) $('survLeft').textContent = s.left || 0;
+    if ($('survClear')) $('survClear').textContent = s.cleared || 0;
+    const mates = livingMates();
+    show('spectateBox', !me.alive && mates.length > 0 && phase !== 'results');
+    if (!me.alive && mates.length && !mates.some(q => q.id === spectateId)) spectateId = mates[0].id;
+    if ($('spectateName') && spectateId && players.get(spectateId)) $('spectateName').textContent = 'WATCHING ' + players.get(spectateId).name;
+  } else {
+    $('timer').textContent = secs;
+    $('timer').classList.toggle('urgent', secs <= 10 && phase === 'play');
+    show('spectateBox', false);
+  }
   if (!me) return;
   const hp = Math.max(0, Math.round(me.hp));
   const hpMax = me.maxHp || MAX_HP;
@@ -7283,8 +8091,9 @@ const pips = $('pips');
   else if (charging) $('chargeFill').style.width = (Math.min(1, gun.charge / (gdef.charge || 2)) * 100) + '%';
   $('crosshair').classList.toggle('off', gun.reload > 0 || gun.laserBeam || gun.laserCd > 0 || (gdef.id === 'sniper' && gun.charging && gun.charge >= (gdef.charge || 0.5)) || (gdef.id !== 'bow' && gdef.id !== 'gauntlet' && gdef.id !== 'paintbrush' && gdef.id !== 'laser' && gdef.id !== 'crossbow' && gdef.id !== 'canon' && gdef.id !== 'lasso' && gun.ammo === 0 && me.item !== 'gun'));
   $('crosshair').classList.toggle('lock', gdef.id === 'crossbow' && gun.xbowLoaded);
-  show('deadBox', !me.alive && phase !== 'results');
-  if (!me.alive) $('deadT').textContent = 'Back in ' + Math.max(0, me.deadT).toFixed(1) + 's';
+  if (isSurvival() && !me.alive) $('crosshair').classList.add('off');
+  show('deadBox', !me.alive && phase !== 'results' && !(isSurvival() && livingMates().length));
+  if (!me.alive) $('deadT').textContent = isSurvival() ? 'Run over' : ('Back in ' + Math.max(0, me.deadT).toFixed(1) + 's');
   show('lockHint', !locked && phase !== 'results');
   let big = '';
   if (phase === 'countdown') {
@@ -7311,6 +8120,7 @@ function updateVisuals(dt, t) {
         while (dy > Math.PI) dy -= Math.PI * 2;
         while (dy < -Math.PI) dy += Math.PI * 2;
         q.yaw += dy * k;
+        if (q.tgt.pitch != null) q.pitch += (q.tgt.pitch - q.pitch) * k;
       }
     }
     const m = q.mesh;
@@ -7324,6 +8134,12 @@ function updateVisuals(dt, t) {
       m.inner.rotation.z = Math.sin(q.anim * 8) * 0.4;
       m.inner.scale.set(1.05, 0.9, 1.05);
       m.inner.position.y = 0.15;
+    } else if (q.zombie) {
+      const limp = Math.sin(q.anim * (spd > 0.4 ? 5 : 2.2));
+      m.inner.rotation.x = 0.14;
+      m.inner.rotation.z = limp * 0.07;
+      m.inner.scale.set(1, 0.9, 1);
+      m.inner.position.y = 0;
     } else if (m.skin.style === 'mech') {
       m.inner.rotation.x = 0; m.inner.rotation.z = 0;
       const moving = spd > 0.4;
@@ -7338,7 +8154,7 @@ function updateVisuals(dt, t) {
       m.inner.position.y = Math.max(0, bounce * 0.55);
     }
     // lively blink
-    if (m.eyes) {
+    if (m.eyes && m.eyes.length) {
       m.blink = (m.blink || 0) - dt;
       const blinking = m.blink < 0.12 && m.blink > 0;
       if (m.blink <= 0) m.blink = 2.2 + Math.random() * 3.5;
@@ -7584,8 +8400,16 @@ function frame(nowMs) {
     camera.lookAt(ox, dish ? 3 : 1, oz);
   }
   updateVisuals(dt, t);
+  if (state === 'game' && me && isSurvival() && !me.alive) {
+    const watch = players.get(spectateId);
+    if (watch && watch.alive) {
+      camera.position.set(watch.x, watch.y + EYE, watch.z);
+      camera.rotation.set(watch.pitch || 0, watch.yaw, 0);
+    }
+  }
   updateParticles(dt);
   tickPetriDish(dt);
+  flushVitals();
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
