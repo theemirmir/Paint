@@ -32,7 +32,7 @@
   .btn:disabled { opacity: 0.45; cursor: default; transform: none; }
   .btn.big { font-size: 24px; padding: 16px 34px; }
   .btn.small { font-size: 15px; padding: 7px 16px; box-shadow: 0 3px 0 #2b2f3a; }
-  .green { background: #3ee68a; } .yellow { background: #ffd21f; } .pink { background: #ff4fa3; } .gray { background: #9aa6b5; } .cyan { background: #3ec6ff; }
+  .green { background: #3ee68a; } .yellow { background: #ffd21f; } .pink { background: #ff4fa3; } .gray { background: #9aa6b5; } .cyan { background: #3ec6ff; } .purple { background: #b57bff; }
   #viewTabs { justify-content: center; margin: 8px 0; }
   #viewSkins { display: flex; flex-direction: column; gap: 8px; text-align: left; width: min(440px, 86vw); margin: 0 auto 8px; }
   .wskinRow { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 12px; border: 3px solid #2b2f3a; border-radius: 14px; background: #f6f8fb; }
@@ -237,10 +237,15 @@
 
   #hud { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
   #adminPanel { z-index: 40; background: rgba(16, 20, 28, 0.72); }
-  #adminPanel .card { align-items: stretch; width: min(420px, 92vw); }
+  #adminPanel .card { align-items: stretch; width: min(420px, 92vw); max-height: 86vh; overflow: auto; }
   #adminPanel .btn { width: 100%; }
   #adminPanel label { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-weight: 900; }
   #adminPanel select, #adminPanel input { font: 900 16px "Segoe UI", Arial, sans-serif; border: 3px solid #2b2f3a; border-radius: 12px; padding: 8px 10px; }
+  #adminPanel .admUpRows { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 8px; }
+  #adminPanel .admUpRow { display: flex; align-items: center; gap: 6px; font-weight: 900; }
+  #adminPanel .admUpRow span { min-width: 44px; }
+  #adminPanel .admUpRow b { flex: 1; text-align: center; font-size: 15px; }
+  #adminPanel .admUpRow .btn { width: auto; min-width: 44px; padding: 6px 8px; }
   #scorebar { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); width: min(640px, 80vw); height: 38px;
               background: rgba(230,235,241,0.92); border: 3px solid #2b2f3a; border-radius: 22px; overflow: hidden;
               box-shadow: 0 6px 0 #2b2f3a, 0 12px 28px rgba(0,0,0,0.18); }
@@ -450,6 +455,7 @@
         <button id="tabGuns" class="btn yellow">GUNS</button>
         <button id="tabAcc" class="btn green">ACCESSORIES</button>
         <button id="tabWskins" class="btn cyan">WEAPON SKINS</button>
+        <button id="tabUp" class="btn purple">PERSONAL</button>
       </div>
       <div class="shopMain">
         <div id="shopHint" class="muted"></div>
@@ -568,6 +574,12 @@
     <label>EXP <input id="admExp" type="number" min="1" max="999999" value="100"></label>
     <button type="button" id="admExpGo" class="btn cyan">GIVE EXP</button>
     <div class="muted" id="admExpNow">You have 0 EXP</div>
+    <div class="muted" style="margin-top:6px">PERSONAL UPS · 0–300</div>
+    <div class="admUpRows">
+      <div class="admUpRow" data-up="hp"><span>HP</span><button type="button" class="btn gray small admUpBtn" data-d="-10">−10</button><button type="button" class="btn gray small admUpBtn" data-d="-1">−</button><b id="admUpHp">0</b><button type="button" class="btn green small admUpBtn" data-d="1">+</button><button type="button" class="btn green small admUpBtn" data-d="10">+10</button></div>
+      <div class="admUpRow" data-up="dmg"><span>DMG</span><button type="button" class="btn gray small admUpBtn" data-d="-10">−10</button><button type="button" class="btn gray small admUpBtn" data-d="-1">−</button><b id="admUpDmg">0</b><button type="button" class="btn green small admUpBtn" data-d="1">+</button><button type="button" class="btn green small admUpBtn" data-d="10">+10</button></div>
+      <div class="admUpRow" data-up="spd"><span>SPD</span><button type="button" class="btn gray small admUpBtn" data-d="-10">−10</button><button type="button" class="btn gray small admUpBtn" data-d="-1">−</button><b id="admUpSpd">0</b><button type="button" class="btn green small admUpBtn" data-d="1">+</button><button type="button" class="btn green small admUpBtn" data-d="10">+10</button></div>
+    </div>
     <button type="button" id="admGod" class="btn pink">INVINCIBLE: OFF</button>
     <button type="button" id="admClose" class="btn">CLOSE</button>
   </div>
@@ -1290,6 +1302,10 @@ if (!profile.owned || typeof profile.owned !== 'object') profile.owned = {};
 if (!profile.owned.skins || typeof profile.owned.skins !== 'object') profile.owned.skins = {};
 if (!profile.owned.guns || typeof profile.owned.guns !== 'object') profile.owned.guns = {};
 if (!profile.owned.acc || typeof profile.owned.acc !== 'object') profile.owned.acc = {};
+if (!profile.up || typeof profile.up !== 'object') profile.up = {};
+if (profile.up.hp == null) profile.up.hp = 0;
+if (profile.up.dmg == null) profile.up.dmg = 0;
+if (profile.up.spd == null) profile.up.spd = 0;
 if (profile.exp == null) profile.exp = 0;
 if (!profile.ach || typeof profile.ach !== 'object') profile.ach = {};
 if (profile.survivalWaves == null) profile.survivalWaves = 0;
@@ -1310,6 +1326,104 @@ function trySpend(cost) {
   if (adminOn() && adminState.infCoins) return true;
   if ((profile.wins || 0) < n) return false;
   profile.wins -= n;
+  return true;
+}
+const UP_MAX = 300;
+const PERSONAL_UPS = [
+  { id: 'hp', name: '+10 Health', base: 50, step: 10, blurb: '+10 max HP each buy. Reach 300 for INVINCIBLE.' },
+  { id: 'dmg', name: 'Total Damage', base: 70, step: 10, blurb: '+1 damage on every weapon each buy. Reach 300 for ONE-PUNCH.' },
+  { id: 'spd', name: 'Movement Speed', base: 50, step: 10, blurb: '+0.1 blocks/s each buy. Reach 300 for THE FLASH.' },
+];
+function upCount(id, src) {
+  const bag = src || profile.up || {};
+  return Math.max(0, Math.min(UP_MAX, (bag[id] | 0)));
+}
+function upCost(id) {
+  const def = PERSONAL_UPS.find(u => u.id === id);
+  if (!def) return 9999;
+  const n = upCount(id);
+  if (n >= UP_MAX) return 0;
+  return def.base + n * def.step;
+}
+function personalFromUp(up) {
+  const hp = upCount('hp', up), dmg = upCount('dmg', up), spd = upCount('spd', up);
+  return {
+    hpBonus: hp * 10,
+    invincible: hp >= UP_MAX,
+    dmgBonus: dmg >= UP_MAX ? 0 : dmg,
+    onePunch: dmg >= UP_MAX,
+    spdAdd: spd >= UP_MAX ? 22 : spd * 0.1,
+    flash: spd >= UP_MAX,
+    up: { hp, dmg, spd },
+  };
+}
+function personalStats(q) {
+  // Live stats from upgrade bag — never treat max badges as cosmetic-only
+  if (!q || q.local) return personalFromUp(profile.up);
+  if (q.up) return personalFromUp(q.up);
+  return {
+    hpBonus: Math.max(0, (q.maxHp || MAX_HP) - MAX_HP),
+    invincible: !!q.invincible,
+    dmgBonus: q.dmgBonus || 0,
+    onePunch: !!q.onePunch,
+    spdAdd: q.spdAdd || 0,
+    flash: !!q.flash,
+    up: { hp: 0, dmg: 0, spd: 0 },
+  };
+}
+function syncPersonalFlags(q) {
+  if (!q) return;
+  const ps = personalStats(q);
+  q.up = ps.up;
+  q.invincible = ps.invincible;
+  q.onePunch = ps.onePunch;
+  q.dmgBonus = ps.dmgBonus;
+  q.spdAdd = ps.spdAdd;
+  q.flash = ps.flash;
+  const wantMax = MAX_HP + ps.hpBonus;
+  if (q.maxHp !== wantMax) {
+    const old = q.maxHp || MAX_HP;
+    q.maxHp = wantMax;
+    if (q.alive) {
+      const delta = wantMax - old;
+      if (delta > 0) q.hp = Math.min(wantMax, (q.hp || 0) + delta);
+      else q.hp = Math.min(q.hp || 0, wantMax);
+    }
+  }
+}
+function pushMyUpToLobby() {
+  const payload = myUpPayload();
+  if (lobby && lobby.roster) {
+    const r = lobby.roster.find(x => x.cid === myCid);
+    if (r) r.up = payload;
+    if (lobby.isHost && !lobby.solo) broadcastRoster();
+    else if (!lobby.solo) send({ t: 'upSync', up: payload });
+  }
+  if (me && me.local) syncPersonalFlags(me);
+}
+function myUpPayload() {
+  return { hp: upCount('hp'), dmg: upCount('dmg'), spd: upCount('spd') };
+}
+function buyPersonalUp(id) {
+  const def = PERSONAL_UPS.find(u => u.id === id);
+  if (!def) return false;
+  const n = upCount(id);
+  if (n >= UP_MAX) { toast('MAXED · ' + def.name); return false; }
+  const cost = upCost(id);
+  if (!trySpend(cost)) { toast('Need ' + cost + ' coins'); return false; }
+  profile.up[id] = n + 1;
+  saveProfile();
+  sfx('equip');
+  applyPersonalToMe();
+  pushMyUpToLobby();
+  const now = upCount(id);
+  if (now >= UP_MAX) {
+    if (id === 'hp') toast('INVINCIBLE UNLOCKED');
+    else if (id === 'dmg') toast('ONE-PUNCH UNLOCKED');
+    else toast('THE FLASH UNLOCKED');
+  } else toast(def.name + ' · ' + now + '/' + UP_MAX);
+  if ($('shopWins')) $('shopWins').textContent = coinText();
+  if ($('menuWins')) $('menuWins').textContent = coinText();
   return true;
 }
 let gameMode = profile.mode === 'survival' ? 'survival' : 'pvp';
@@ -1335,6 +1449,10 @@ const GUNS = [
   { id: 'spray', name: 'Spray', wins: 50, ammo: 20, dmg: 30, rate: 0.28, walkMul: 1, desc: '20 ammo · one click fires 4 rounds fast · paintball damage · infinite range' },
   { id: 'canon', name: 'Canon', wins: 80, ammo: 0, dmg: 100, rate: 1, charge: 2, walkMul: 0.86, desc: '2×2 plasma two-shot · 1s purple energy cooldown · hold 2s to sonic-lift for 4s' },
   { id: 'lasso', name: 'Lasso', wins: 100, ammo: 0, dmg: 30, rate: 0.16, walkMul: 1, desc: 'Whip-smash a foe for half HP · hoop holds 10 blocks (they stay) · throw: +½ grenade range and 30 dmg per block' },
+  { id: 'spear', name: 'Spear', wins: 120, ammo: 0, dmg: 50, rate: 0.3, melee: 5.2, walkMul: 1.05, desc: 'Stone tip · wooden pole · jab 50 dmg · 0.3s cooldown · faster movement deals more damage' },
+  { id: 'shuriken', name: 'Shuriken', wins: 90, ammo: 10, dmg: 30, rate: 0.22, walkMul: 1.08, desc: '10 stars · 30 dmg · each paints ½ grenade · tap fires 1 · hold 0.3s fires 2 continuously · hold 0.6s fires 4 · doubles every 0.3s · reload swaps to a fresh stack' },
+  { id: 'hammer', name: 'Hammer', wins: 140, ammo: 0, dmg: 150, smashDmg: 250, rate: 1, charge: 3, melee: 3.4, smashR: 3, walkMul: 0.9, desc: 'Huge hammer · slap 150 dmg · 1s cooldown · paints 1 grenade · hold 3s: leap 10 high onto aim point · 250 dmg in 3-block radius · paints 2 grenades' },
+  { id: 'tazer', name: 'Tazer', wins: 150, ammo: 0, dmg: 15, rate: 1.2, charge: 1, melee: 2, flingDmg: 100, walkMul: 0.95, desc: '2-block range · hold 1s: electricity bolts · foes that touch are stuck until you release · release flings them where you aim · flung target takes 100 · exploder paint boom' },
 ];
 const ACCESSORIES = [
   { id: 'grenade', name: 'Grenade', wins: 0, starter: true, desc: 'Classic paint bomb' },
@@ -1360,6 +1478,10 @@ const WSKINS = [
   { id: 'water', gun: 'spray', name: 'Water Spray', wins: 200, blurb: 'A detailed water gun. Shots are water jets. Same Spray damage and fire pattern. Reload: a spring bursts up and the gun drinks the water.' },
   { id: 'pirate', gun: 'canon', name: 'Pirate Canon', wins: 320, blurb: 'A huge pirate cannon. Shots are real cannonballs. Charge to lift: the cannon flashes red, then explodes (no paint) and launches you. Same Canon damage and timing.' },
   { id: 'hook', gun: 'lasso', name: 'Hook', wins: 400, blurb: 'A thin line with a hooked end and a star. Blocks collect on the hook. Same Lasso smash, grab, and throw rules.' },
+  { id: 'mcspear', gun: 'spear', name: 'Minecraft Spear', wins: 440, blurb: 'Exact Minecraft diamond spear pixels. Same Spear jab damage, range, and timing.' },
+  { id: 'papershuri', gun: 'shuriken', name: 'Paper Shuriken', wins: 380, blurb: 'Cyan-and-white origami stars. Same Shuriken damage and bursts. Reload: stars vanish, then you fold fresh paper into a new star.' },
+  { id: 'mjolnir', gun: 'hammer', name: 'Mjolnir', wins: 480, blurb: "Thor's hammer. Same Hammer slap and smash. On slam, lightning strikes from 100 blocks above." },
+  { id: 'magnet', gun: 'tazer', name: 'Magnet', wins: 460, blurb: 'A horseshoe magnet. Same Tazer catch, hold, and fling. Pulling foes shows magnetic particles and field animations.' },
 ];
 const wskinById = id => WSKINS.find(s => s.id === id) || null;
 function skinsForGun(gunId) { return WSKINS.filter(s => s.gun === gunId); }
@@ -2459,11 +2581,98 @@ function updateSkinFx(dt) {
     f.mesh.position.x += f.vx * dt;
     f.mesh.position.y += f.vy * dt;
     f.mesh.position.z += f.vz * dt;
-    f.mesh.lookAt(f.mesh.position.x + f.vx, f.mesh.position.y + f.vy, f.mesh.position.z + f.vz);
+    if (!f.noLook && (f.vx || f.vy || f.vz)) {
+      f.mesh.lookAt(f.mesh.position.x + f.vx, f.mesh.position.y + f.vy, f.mesh.position.z + f.vz);
+    }
     const fade = Math.max(0, f.life / f.max);
-    f.mesh.traverse(o => { if (o.material && o.material.opacity != null) o.material.opacity = fade; });
+    f.mesh.traverse(o => {
+      if (o.isLight) o.intensity = (f.light0 || 6) * fade;
+      else if (o.material && o.material.opacity != null) o.material.opacity = fade * (o.userData.op0 != null ? o.userData.op0 : 1);
+    });
     if (f.life <= 0) { scene.remove(f.mesh); skinFx.splice(i, 1); }
   }
+}
+function spawnTimedFx(mesh, life = 0.55) {
+  mesh.traverse(o => {
+    if (o.material) {
+      o.material = o.material.clone();
+      o.material.transparent = true;
+      if (o.material.opacity == null) o.material.opacity = 1;
+      o.userData.op0 = o.material.opacity;
+    }
+  });
+  scene.add(mesh);
+  skinFx.push({ mesh, vx: 0, vy: 0, vz: 0, life, max: life, noLook: true, light0: 10 });
+}
+function mjolnirLightningStrike(x, y, z) {
+  const topY = y + 100;
+  const root = new THREE.Group();
+  const coreM = new THREE.MeshBasicMaterial({ color: '#f2f8ff', transparent: true, opacity: 1 });
+  const glowM = new THREE.MeshBasicMaterial({ color: '#6aa8ff', transparent: true, opacity: 0.75 });
+  const edgeM = new THREE.MeshBasicMaterial({ color: '#b7d8ff', transparent: true, opacity: 0.55 });
+  for (let b = 0; b < 4; b++) {
+    const pts = [];
+    let cx = x + (Math.random() - 0.5) * (1.2 + b), cz = z + (Math.random() - 0.5) * (1.2 + b);
+    const segs = 36;
+    for (let i = 0; i <= segs; i++) {
+      const u = i / segs;
+      const py = topY + (y - topY) * u;
+      if (i > 0 && i < segs) {
+        cx += (Math.random() - 0.5) * (2.8 + b * 0.6);
+        cz += (Math.random() - 0.5) * (2.8 + b * 0.6);
+      }
+      if (i === segs) { cx = x + (Math.random() - 0.5) * 0.35; cz = z + (Math.random() - 0.5) * 0.35; }
+      pts.push(new THREE.Vector3(cx, py, cz));
+    }
+    for (let i = 0; i < pts.length - 1; i++) {
+      const a = pts[i], b2 = pts[i + 1];
+      const len = Math.max(0.05, a.distanceTo(b2));
+      const mid = a.clone().add(b2).multiplyScalar(0.5);
+      const r = b === 0 ? 0.28 : b === 1 ? 0.16 : 0.09;
+      const tube = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 0.85, len, 6), b === 0 ? coreM : (b === 1 ? glowM : edgeM));
+      tube.position.copy(mid);
+      tube.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b2.clone().sub(a).normalize());
+      root.add(tube);
+      // short side forks
+      if (b < 2 && i > 4 && i < segs - 4 && Math.random() < 0.18) {
+        const fork = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.02, 1.8 + Math.random() * 2.5, 5), edgeM);
+        fork.position.copy(mid);
+        fork.rotation.set(Math.random() * 1.2, Math.random() * 6, Math.random() * 1.2);
+        root.add(fork);
+      }
+    }
+  }
+  const flash = new THREE.Mesh(new THREE.SphereGeometry(1.4, 12, 10), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.9 }));
+  flash.position.set(x, y + 0.6, z);
+  root.add(flash);
+  const light = new THREE.PointLight('#9ecbff', 14, 55, 2);
+  light.position.set(x, y + 6, z);
+  root.add(light);
+  spawnTimedFx(root, 0.85);
+  burst(x, y + 0.5, z, 48, '#dcecff', 14, { life: 0.55, size: 1.6, up: 2.2 });
+  burst(x, y + 1.2, z, 28, '#4f8cff', 10, { life: 0.45, size: 1.05, up: 1.4 });
+  burst(x, y + 2, z, 16, '#ffffff', 7, { life: 0.35, size: 0.7, up: 0.6 });
+  energyRing(x, y + 0.1, z, '#9ecbff', 2.4, 0.55);
+  energyRing(x, y + 0.15, z, '#ffffff', 1.1, 0.4);
+  sfx('explode_big');
+}
+function magnetSuckFx(from, to, dt) {
+  if (Math.random() > dt * 26) return;
+  const u = Math.random();
+  const x = from.x + (to.x - from.x) * u;
+  const y = from.y + (to.y - from.y) * u + Math.sin(u * Math.PI) * 0.25;
+  const z = from.z + (to.z - from.z) * u;
+  const col = Math.random() < 0.45 ? '#ff3b3b' : (Math.random() < 0.5 ? '#c5ccd6' : '#ffd21f');
+  burst(x, y, z, 2, col, 2.2, { life: 0.28, size: 0.35, up: 0.05, g: 0.05 });
+  // iron filing dash toward magnet tip
+  const mesh = new THREE.Mesh(
+    new THREE.BoxGeometry(0.05, 0.02, 0.12),
+    new THREE.MeshStandardMaterial({ color: col, metalness: 0.85, roughness: 0.35, emissive: col, emissiveIntensity: 0.35, transparent: true, opacity: 1 })
+  );
+  const spd = 10 + Math.random() * 8;
+  const dx = from.x - x, dy = from.y - y, dz = from.z - z;
+  const n = Math.hypot(dx, dy, dz) || 1;
+  spawnSkinFx(mesh, x, y, z, (dx / n) * spd, (dy / n) * spd, (dz / n) * spd, 0.22 + Math.random() * 0.15);
 }
 function makeNeedleMesh() {
   return makeProjectileMesh('shot', 0, 'needle');
@@ -3340,6 +3549,7 @@ function tickPetriDish(dt) {
       if (dx * dx + dy * dy + dz * dz < (v.rad + 0.45) * (v.rad + 0.45)) { hit = true; break; }
     }
     if (!hit || (adminOn() && adminState.god && q.local)) continue;
+    if (personalStats(q).invincible || q.invincible) continue;
     q.hp = Math.max(0, q.hp - 30 * dt);
     q.lastHit = gameTime;
     q.virusSfx = (q.virusSfx || 0) - dt;
@@ -3642,6 +3852,314 @@ function addSkinExtras(inner, skin, team) {
   }
   inner.add(extras);
   return extras;
+}
+// Exact Held_Diamond_Spear_JE2_BE1.png 32×32 (sampled center of each wiki 5× pixel)
+const MC_DIAMOND_SPEAR = [
+  '#0e3f36,#0e3f36,#0e3f36,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.',
+  '#082520,#f2fffd,#a4fdf0,#0e3f36,#0e3f36,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.',
+  '#082520,#33ebcb,#f2fffd,#a4fdf0,#33ebcb,#0e3f36,#0e3f36,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.',
+  '.,#082520,#33ebcb,#f2fffd,#33ebcb,#a4fdf0,#2bc7ac,#0e3f36,#0e3f36,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.',
+  '.,#082520,#1e8a77,#33ebcb,#f2fffd,#a4fdf0,#33ebcb,#2bc7ac,#0e3f36,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.',
+  '.,.,#082520,#1e8a77,#2bc7ac,#f2fffd,#33ebcb,#0e3f36,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.',
+  '.,.,#082520,#1e8a77,#1e8a77,#2bc7ac,#a4fdf0,#493615,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.',
+  '.,.,.,#082520,#1e8a77,#082520,#281e0b,#684e1e,#493615,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.',
+  '.,.,.,#082520,#082520,.,.,#281e0b,#684e1e,#493615,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.',
+  '.,.,.,.,.,.,.,.,#281e0b,#896727,#493615,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.',
+  '.,.,.,.,.,.,.,.,.,#281e0b,#896727,#493615,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.',
+  '.,.,.,.,.,.,.,.,.,.,#281e0b,#684e1e,#493615,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.',
+  '.,.,.,.,.,.,.,.,.,.,.,#281e0b,#896727,#493615,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.',
+  '.,.,.,.,.,.,.,.,.,.,.,.,#281e0b,#896727,#493615,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.',
+  '.,.,.,.,.,.,.,.,.,.,.,.,.,#281e0b,#896727,#493615,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.',
+  '.,.,.,.,.,.,.,.,.,.,.,.,.,.,#281e0b,#684e1e,#67290b,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.',
+  '.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,#411805,#ba5f34,#67290b,.,.,.,.,.,.,.,.,.,.,.,.,.,.',
+  '.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,#411805,#a34b22,#67290b,.,.,.,.,.,.,.,.,.,.,.,.,.',
+  '.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,#411805,#a34b22,#67290b,.,.,.,.,.,.,.,.,.,.,.,.',
+  '.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,#411805,#834121,#67290b,.,.,.,.,.,.,.,.,.,.,.',
+  '.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,#411805,#834121,#67290b,.,.,.,.,.,.,.,.,.,.',
+  '.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,#411805,#834121,#67290b,.,.,.,.,.,.,.,.,.',
+  '.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,#411805,#684e1e,#493615,.,.,.,.,.,.,.,.',
+  '.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,#281e0b,#896727,#493615,.,.,.,.,.,.,.',
+  '.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,#281e0b,#896727,#493615,.,.,.,.,.,.',
+  '.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,#281e0b,#896727,#493615,.,.,.,.,.',
+  '.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,#281e0b,#684e1e,#493615,.,.,.,.',
+  '.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,#281e0b,#896727,#493615,.,.,.',
+  '.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,#281e0b,#684e1e,#493615,.,.',
+  '.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,#281e0b,#684e1e,#0e3f36,.',
+  '.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,#082520,#2bc7ac,#0e3f36',
+  '.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,#082520,#082520',
+];
+const _mcSpearMatCache = new Map();
+function mcSpearMat(hex) {
+  let m = _mcSpearMatCache.get(hex);
+  if (m) return m;
+  const n = parseInt(hex.slice(1), 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  const cool = b > r + 20 && g > r;
+  m = new THREE.MeshStandardMaterial({
+    color: hex,
+    roughness: cool ? 0.28 : 0.62,
+    metalness: cool ? 0.55 : (r > 80 && g > 40 && b < 60 ? 0.12 : 0.35),
+  });
+  _mcSpearMatCache.set(hex, m);
+  return m;
+}
+function buildMinecraftDiamondSpear() {
+  const root = new THREE.Group();
+  const voxels = new THREE.Group();
+  const s = 0.05, thick = s * 0.5;
+  const geo = new THREE.BoxGeometry(s, s, thick);
+  for (let y = 0; y < 32; y++) {
+    const cols = MC_DIAMOND_SPEAR[y].split(',');
+    for (let x = 0; x < 32; x++) {
+      const c = cols[x];
+      if (!c || c === '.') continue;
+      const px = new THREE.Mesh(geo, mcSpearMat(c));
+      px.position.set((x - 15.5) * s, (15.5 - y) * s, 0);
+      voxels.add(px);
+    }
+  }
+  // Tip (texture top-left) → forward (−Z), handle toward player
+  voxels.rotation.z = Math.PI / 4;
+  voxels.rotation.y = -Math.PI / 2;
+  root.add(voxels);
+  return root;
+}
+function makePaperOrigamiStar(s = 1) {
+  const teal = new THREE.MeshStandardMaterial({ color: '#2dd4bf', roughness: 0.84, metalness: 0.02 });
+  const white = new THREE.MeshStandardMaterial({ color: '#f7fafc', roughness: 0.9 });
+  const tealFold = new THREE.MeshStandardMaterial({ color: '#14b8a6', roughness: 0.88 });
+  const whiteFold = new THREE.MeshStandardMaterial({ color: '#e2e8f0', roughness: 0.92 });
+  const star = new THREE.Group();
+  for (let i = 0; i < 4; i++) {
+    const isTeal = i % 2 === 0;
+    const mat = isTeal ? teal : white;
+    const edge = isTeal ? tealFold : whiteFold;
+    const other = isTeal ? white : teal;
+    const blade = new THREE.Group();
+    // Right-angle triangular point (origami module)
+    const shape = new THREE.Shape();
+    shape.moveTo(0, 0);
+    shape.lineTo(0.16 * s, 0);
+    shape.lineTo(0, 0.32 * s);
+    shape.closePath();
+    const face = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 0.012 * s, bevelEnabled: false }), mat);
+    face.position.set(-0.02 * s, 0.02 * s, -0.006 * s);
+    const tuck = new THREE.Mesh(new THREE.BoxGeometry(0.055 * s, 0.2 * s, 0.022 * s), edge);
+    tuck.position.set(-0.05 * s, 0.12 * s, 0.01 * s);
+    tuck.rotation.z = 0.12;
+    const pocket = new THREE.Mesh(new THREE.BoxGeometry(0.1 * s, 0.1 * s, 0.016 * s), other);
+    pocket.position.set(0.03 * s, 0.05 * s, -0.01 * s);
+    const crease = new THREE.Mesh(new THREE.BoxGeometry(0.01 * s, 0.28 * s, 0.014 * s), edge);
+    crease.position.set(0.01 * s, 0.14 * s, 0.004 * s);
+    blade.add(face, tuck, pocket, crease);
+    blade.rotation.z = (i / 4) * Math.PI * 2;
+    star.add(blade);
+  }
+  const hub = new THREE.Mesh(new THREE.BoxGeometry(0.07 * s, 0.07 * s, 0.028 * s), tealFold);
+  star.add(hub);
+  return star;
+}
+function makePaperFoldRig() {
+  const rig = new THREE.Group();
+  const white = new THREE.MeshStandardMaterial({ color: '#f7fafc', roughness: 0.92, side: THREE.DoubleSide });
+  const teal = new THREE.MeshStandardMaterial({ color: '#2dd4bf', roughness: 0.86, side: THREE.DoubleSide });
+  const creaseM = new THREE.MeshStandardMaterial({ color: '#94a3b8', roughness: 1, side: THREE.DoubleSide });
+  const sheet = new THREE.Group();
+  const halfW = 0.2, halfH = 0.12;
+  // Horizontal strip with hinged left flap (fold pivots on center crease)
+  const stripA = new THREE.Group();
+  const aBase = new THREE.Mesh(new THREE.PlaneGeometry(halfW, halfH), white);
+  aBase.position.x = halfW * 0.5;
+  const aBaseBack = new THREE.Mesh(new THREE.PlaneGeometry(halfW, halfH), teal);
+  aBaseBack.position.set(halfW * 0.5, 0, -0.002); aBaseBack.rotation.y = Math.PI;
+  const aHinge = new THREE.Group();
+  aHinge.position.set(0, 0, 0);
+  const aFoldL = new THREE.Mesh(new THREE.PlaneGeometry(halfW, halfH), white);
+  aFoldL.position.x = -halfW * 0.5;
+  const aFoldLBack = new THREE.Mesh(new THREE.PlaneGeometry(halfW, halfH), teal);
+  aFoldLBack.position.set(-halfW * 0.5, 0, -0.002); aFoldLBack.rotation.y = Math.PI;
+  aHinge.add(aFoldL, aFoldLBack);
+  const aCrease = new THREE.Mesh(new THREE.PlaneGeometry(0.008, halfH * 0.95), creaseM);
+  aCrease.position.z = 0.003;
+  stripA.add(aBase, aBaseBack, aHinge, aCrease);
+  stripA.position.set(-halfW * 0.5, 0.05, 0);
+  // Vertical strip with top/bottom hinges
+  const stripB = new THREE.Group();
+  const bCore = new THREE.Mesh(new THREE.PlaneGeometry(halfH, halfW), teal);
+  const bCoreBack = new THREE.Mesh(new THREE.PlaneGeometry(halfH, halfW), white);
+  bCoreBack.position.z = -0.002; bCoreBack.rotation.y = Math.PI;
+  const bHingeT = new THREE.Group();
+  bHingeT.position.set(0, halfW * 0.5, 0);
+  const bFoldT = new THREE.Mesh(new THREE.PlaneGeometry(halfH, halfW), white);
+  bFoldT.position.y = halfW * 0.5;
+  const bFoldTBack = new THREE.Mesh(new THREE.PlaneGeometry(halfH, halfW), teal);
+  bFoldTBack.position.set(0, halfW * 0.5, -0.002); bFoldTBack.rotation.y = Math.PI;
+  bHingeT.add(bFoldT, bFoldTBack);
+  const bHingeB = new THREE.Group();
+  bHingeB.position.set(0, -halfW * 0.5, 0);
+  const bFoldB = new THREE.Mesh(new THREE.PlaneGeometry(halfH, halfW), teal);
+  bFoldB.position.y = -halfW * 0.5;
+  const bFoldBBack = new THREE.Mesh(new THREE.PlaneGeometry(halfH, halfW), white);
+  bFoldBBack.position.set(0, -halfW * 0.5, -0.002); bFoldBBack.rotation.y = Math.PI;
+  bHingeB.add(bFoldB, bFoldBBack);
+  const bCrease = new THREE.Mesh(new THREE.PlaneGeometry(halfH * 0.95, 0.008), creaseM);
+  bCrease.position.z = 0.003;
+  stripB.add(bCore, bCoreBack, bHingeT, bHingeB, bCrease);
+  stripB.position.set(0.02, -0.04, 0.012);
+  sheet.add(stripA, stripB);
+  const forming = makePaperOrigamiStar(0.95);
+  forming.visible = false;
+  forming.scale.setScalar(0.2);
+  rig.add(sheet, forming);
+  rig.userData.sheet = sheet;
+  rig.userData.stripA = stripA;
+  rig.userData.stripB = stripB;
+  rig.userData.aHinge = aHinge;
+  rig.userData.bHingeT = bHingeT;
+  rig.userData.bHingeB = bHingeB;
+  rig.userData.forming = forming;
+  rig.visible = false;
+  return rig;
+}
+function buildMjolnirModel() {
+  const root = new THREE.Group();
+  const steel = new THREE.MeshStandardMaterial({ color: '#aeb6bf', metalness: 0.92, roughness: 0.38 });
+  const steelDark = new THREE.MeshStandardMaterial({ color: '#6e767f', metalness: 0.88, roughness: 0.45 });
+  const etch = new THREE.MeshStandardMaterial({ color: '#2a3038', metalness: 0.7, roughness: 0.55 });
+  const leather = new THREE.MeshStandardMaterial({ color: '#4a3424', roughness: 0.88, metalness: 0.04 });
+  const leatherHi = new THREE.MeshStandardMaterial({ color: '#6a4a32', roughness: 0.82, metalness: 0.05 });
+  const head = new THREE.Group();
+  head.position.set(0, 1.22, 0);
+  // Main beveled mallet body
+  const core = new THREE.Mesh(new RoundedBoxGeometry(1.05, 0.72, 0.62, 2, 0.06), steel);
+  const topBevel = new THREE.Mesh(new RoundedBoxGeometry(0.92, 0.12, 0.5, 2, 0.03), steelDark);
+  topBevel.position.y = 0.38;
+  const botBevel = topBevel.clone(); botBevel.position.y = -0.38;
+  const sideL = new THREE.Mesh(new RoundedBoxGeometry(0.1, 0.58, 0.5, 2, 0.03), steelDark);
+  sideL.position.x = -0.5;
+  const sideR = sideL.clone(); sideR.position.x = 0.5;
+  // Striking faces
+  const faceL = new THREE.Mesh(new RoundedBoxGeometry(0.08, 0.55, 0.48, 2, 0.02), steel);
+  faceL.position.x = -0.58;
+  const faceR = faceL.clone(); faceR.position.x = 0.58;
+  // Norse knotwork panels
+  const panelGeo = new RoundedBoxGeometry(0.72, 0.16, 0.02, 1, 0.01);
+  for (const [sx, sy] of [[1, 0.28], [1, -0.28], [-1, 0.28], [-1, -0.28]]) {
+    const p = new THREE.Mesh(panelGeo, etch);
+    p.position.set(0, sy, 0.32 * sx);
+    head.add(p);
+    // fake knot lines
+    for (let k = 0; k < 5; k++) {
+      const line = new THREE.Mesh(new THREE.BoxGeometry(0.5 - k * 0.06, 0.012, 0.015), steelDark);
+      line.position.set((k % 2 ? 0.04 : -0.04), sy + (k - 2) * 0.018, 0.335 * sx);
+      head.add(line);
+    }
+  }
+  // Top circular seal (charges blue when slamming)
+  const sealM = new THREE.MeshStandardMaterial({ color: '#aeb6bf', metalness: 0.92, roughness: 0.35, emissive: '#6aa8ff', emissiveIntensity: 0.12 });
+  const etchGlow = new THREE.MeshStandardMaterial({ color: '#2a3038', metalness: 0.7, roughness: 0.5, emissive: '#4f8cff', emissiveIntensity: 0.1 });
+  const seal = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 0.05, 20), sealM);
+  seal.position.y = 0.45;
+  const sealRing = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.018, 8, 20), etchGlow);
+  sealRing.rotation.x = Math.PI / 2; sealRing.position.y = 0.48;
+  const sealDot = new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 8), etchGlow);
+  sealDot.position.y = 0.5;
+  // Vertical grooves
+  for (const gx of [-0.28, 0.28]) {
+    const groove = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.62, 0.64), steelDark);
+    groove.position.x = gx;
+    head.add(groove);
+  }
+  head.add(core, topBevel, botBevel, sideL, sideR, faceL, faceR, seal, sealRing, sealDot);
+  // Leather-wrapped haft with chevron ridges
+  const haft = new THREE.Group();
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.078, 1.85, 14), leather);
+  shaft.position.y = 0.05;
+  haft.add(shaft);
+  for (let i = 0; i < 18; i++) {
+    const ridge = new THREE.Mesh(new THREE.TorusGeometry(0.082, 0.014, 6, 14), i % 2 ? leatherHi : leather);
+    ridge.rotation.x = Math.PI / 2;
+    ridge.position.y = -0.55 + i * 0.085;
+    ridge.rotation.z = (i % 2 ? 0.35 : -0.35);
+    haft.add(ridge);
+  }
+  const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.12, 12), steelDark);
+  collar.position.y = 0.82;
+  const pommel = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.1, 0.1, 12), steel);
+  pommel.position.y = -0.92;
+  const pommelCap = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 8), steelDark);
+  pommelCap.position.y = -0.98;
+  haft.add(collar, pommel, pommelCap);
+  // Wrist strap loop
+  const strap = new THREE.Group();
+  const loop = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.028, 8, 22, Math.PI * 1.6), leather);
+  loop.rotation.x = Math.PI / 2; loop.rotation.z = 0.4;
+  loop.position.set(0.02, -1.18, 0.05);
+  const strapBit = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.12, 0.02), leatherHi);
+  strapBit.position.set(0, -1.02, 0.02);
+  strap.add(loop, strapBit);
+  root.add(head, haft, strap);
+  root.userData.head = head;
+  root.userData.strap = strap;
+  root.userData.glowParts = [seal, sealRing, sealDot];
+  return root;
+}
+function buildMagnetModel() {
+  const root = new THREE.Group();
+  const red = new THREE.MeshStandardMaterial({ color: '#e03131', metalness: 0.42, roughness: 0.38, emissive: '#7a1010', emissiveIntensity: 0.18 });
+  const silver = new THREE.MeshStandardMaterial({ color: '#d0d6de', metalness: 0.92, roughness: 0.22, emissive: '#8a92a0', emissiveIntensity: 0.12 });
+  // Perfect circular-arc horseshoe: open toward −Z, grip at rear bend (origin)
+  const R = 0.28;
+  const tubeR = 0.078;
+  const open = 0.78; // half-gap from −Z axis
+  const pts = [];
+  const N = 96;
+  for (let i = 0; i <= N; i++) {
+    const θ = open + (Math.PI * 2 - 2 * open) * (i / N);
+    pts.push(new THREE.Vector3(Math.sin(θ) * R, 0, -Math.cos(θ) * R - R));
+  }
+  const curve = new THREE.CatmullRomCurve3(pts, false, 'centripetal', 0.35);
+  const body = new THREE.Mesh(new THREE.TubeGeometry(curve, 120, tubeR, 14, false), red);
+  // Silver pole tips at both open ends
+  const tipA = pts[0].clone();
+  const tipB = pts[pts.length - 1].clone();
+  const tangA = new THREE.Vector3().subVectors(pts[0], pts[1]).normalize();
+  const tangB = new THREE.Vector3().subVectors(pts[pts.length - 1], pts[pts.length - 2]).normalize();
+  const poleGeo = new THREE.SphereGeometry(tubeR * 1.22, 14, 12);
+  const poleL = new THREE.Mesh(poleGeo, silver);
+  poleL.position.copy(tipA).addScaledVector(tangA, tubeR * 0.15);
+  const poleR = new THREE.Mesh(poleGeo.clone(), silver.clone());
+  poleR.position.copy(tipB).addScaledVector(tangB, tubeR * 0.15);
+  // Soft hold band on the rear bend
+  const hold = new THREE.Mesh(new THREE.TorusGeometry(tubeR * 1.05, tubeR * 0.28, 10, 20), silver);
+  hold.rotation.y = Math.PI / 2;
+  hold.position.set(0, 0, 0.02);
+  // Field between the poles
+  const mid = tipA.clone().add(tipB).multiplyScalar(0.5);
+  const field = new THREE.Group();
+  field.position.copy(mid);
+  const rings = [];
+  for (let i = 0; i < 3; i++) {
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(0.1 + i * 0.07, 0.01, 8, 24),
+      new THREE.MeshStandardMaterial({ color: i % 2 ? '#ff6b6b' : '#9ad0ff', emissive: i % 2 ? '#ff3b3b' : '#3ad7ff', emissiveIntensity: 0.7, transparent: true, opacity: 0.55, metalness: 0.2, roughness: 0.4 })
+    );
+    ring.rotation.x = Math.PI / 2;
+    field.add(ring);
+    rings.push(ring);
+  }
+  const core = new THREE.Mesh(new THREE.SphereGeometry(0.045, 10, 8), new THREE.MeshStandardMaterial({ color: '#ffd21f', emissive: '#ff9a00', emissiveIntensity: 1.1 }));
+  field.add(core);
+  // Tip the horseshoe so the U reads clearly in first person (not edge-on)
+  root.rotation.x = 0.55;
+  root.rotation.z = -0.08;
+  root.add(body, poleL, poleR, hold, field);
+  root.userData.tip = core;
+  root.userData.prongs = [poleL, poleR];
+  root.userData.field = field;
+  root.userData.rings = rings;
+  root.userData.magnetArms = [body];
+  return root;
 }
 function makeWeaponModel(kind, team, skin = '') {
   const g = new THREE.Group();
@@ -4610,22 +5128,27 @@ function makeWeaponModel(kind, team, skin = '') {
     const star = new THREE.Mesh(new THREE.OctahedronGeometry(0.048, 0), gold);
     star.position.set(0.02, 0.1, 0.02);
     const cordLen = 1.05;
-    // One line group: string + knot + hook stay welded together
+    // String + tip welded: tip group sits on cord end so the hook never floats off
     const line = new THREE.Group();
     line.position.set(0.02, 0.08, 0);
     const cord = makeHookStringMesh(cordLen);
-    const knot = new THREE.Mesh(new THREE.SphereGeometry(0.022, 10, 8), hookStringMaterial());
-    knot.position.y = cordLen;
-    knot.scale.set(1.15, 0.85, 1.15);
+    const tipGroup = new THREE.Group();
+    tipGroup.position.y = cordLen;
+    const knot = new THREE.Mesh(new THREE.SphereGeometry(0.024, 10, 8), hookStringMaterial());
+    knot.position.y = -0.01;
+    knot.scale.set(1.2, 0.9, 1.2);
     const hookRoot = makeHookHead();
-    hookRoot.position.y = cordLen;
+    // Eye overlaps the cord tip so there's no gap
+    hookRoot.position.y = -0.02;
     const bits = new THREE.Group();
     bits.position.set(0, 0.2, 0.06);
     hookRoot.add(bits);
-    line.add(cord, knot, hookRoot);
+    tipGroup.add(knot, hookRoot);
+    line.add(cord, tipGroup);
     g.add(grip, star, line);
     g.userData.rope = line;
-    g.userData.hook = hookRoot;
+    g.userData.hook = tipGroup;
+    g.userData.hookHead = hookRoot;
     g.userData.cord = line;
     g.userData.star = star;
     g.userData.hopper = line;
@@ -4638,18 +5161,185 @@ function makeWeaponModel(kind, team, skin = '') {
     g.userData.fp = { scale: 1.18, pos: [0.38, -0.48, -0.62], rot: [-1.05, 0.22, 0.18] };
     syncLassoHoop(g, 0, 0);
   } else if (kind === 'lasso') {
-    const rope = makeLassoRopeMesh();
-    const hoopTop = rope.userData.hoopTop;
+    // Very original lasso: wooden grip + rope segments + flat spinning gold ring
+    const ropeM = new THREE.MeshStandardMaterial({ color: '#f6e2b4', roughness: 0.48, metalness: 0.04 });
+    const gold = new THREE.MeshStandardMaterial({ color: '#e8c56a', emissive: '#a87820', emissiveIntensity: 0.22, metalness: 0.45, roughness: 0.32 });
+    const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.046, 0.052, 0.4, 14), wood);
+    grip.position.y = -0.04;
+    const bandA = new THREE.Mesh(new THREE.TorusGeometry(0.054, 0.013, 8, 18), pink);
+    bandA.rotation.x = Math.PI / 2; bandA.position.y = 0.05;
+    const bandB = new THREE.Mesh(new THREE.TorusGeometry(0.054, 0.013, 8, 18), accent);
+    bandB.rotation.x = Math.PI / 2; bandB.position.y = -0.1;
+    const pommel = new THREE.Mesh(new THREE.SphereGeometry(0.058, 14, 12), accent);
+    pommel.position.y = -0.26;
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.052, 0.07, 14), gold);
+    cap.position.y = 0.18;
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.038, 12, 10), gold);
+    eye.position.y = 0.23;
+    const hoop = new THREE.Group();
+    hoop.position.set(0, 0.74, -0.05);
+    const spinner = new THREE.Group();
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.04, 12, 36), gold);
+    ring.rotation.x = Math.PI / 2;
+    const ring2 = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.014, 8, 32), ropeM);
+    ring2.rotation.x = Math.PI / 2;
     const hoopBits = new THREE.Group();
-    hoopTop.add(hoopBits);
-    g.add(rope);
-    g.userData.hopper = rope;
-    g.userData.rope = rope;
-    g.userData.hoop = hoopTop;
-    g.userData.ring = hoopTop;
+    spinner.add(ring, ring2, hoopBits);
+    const knot = new THREE.Mesh(new THREE.SphereGeometry(0.055, 12, 10), gold);
+    knot.position.set(0, 0, 0.42);
+    hoop.add(spinner, knot);
+    const ropeSegs = [];
+    for (let i = 0; i < 8; i++) {
+      const seg = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1, 7), ropeM);
+      ropeSegs.push(seg);
+    }
+    g.add(grip, bandA, bandB, pommel, cap, eye, hoop, ...ropeSegs);
+    g.userData.hopper = ring;
+    g.userData.hoop = hoop;
+    g.userData.spinner = spinner;
+    g.userData.ring = ring;
+    g.userData.ring2 = ring2;
+    g.userData.knot = knot;
+    g.userData.ringBase = 0.42;
     g.userData.hoopBits = hoopBits;
-    g.userData.fp = { scale: 1.15, pos: [0.78, -0.28, -0.95], rot: [0.08, -0.12, 0.02] };
+    g.userData.ropeSegs = ropeSegs;
+    g.userData.gripTip = new THREE.Vector3(0, 0.24, 0);
+    g.userData.fp = { scale: 1.05, pos: [0.3, -0.36, -0.42], rot: [-0.2, 0.45, 0.02] };
     syncLassoHoop(g, 0, 0);
+  } else if (kind === 'hammer' && skin === 'mjolnir') {
+    const mjo = buildMjolnirModel();
+    g.add(mjo);
+    g.userData.head = mjo.userData.head;
+    g.userData.strap = mjo.userData.strap;
+    g.userData.glowParts = mjo.userData.glowParts;
+    g.userData.fp = { scale: 0.5, pos: [0.36, -0.4, -1.08], rot: [0.1, 0.26, -0.16] };
+  } else if (kind === 'hammer') {
+    const haftM = new THREE.MeshStandardMaterial({ color: '#6b4220', roughness: 0.7, metalness: 0.05 });
+    const wrapM = new THREE.MeshStandardMaterial({ color: '#3d2814', roughness: 0.82 });
+    const steelH = new THREE.MeshStandardMaterial({ color: '#8a9098', metalness: 0.85, roughness: 0.28 });
+    const darkH = new THREE.MeshStandardMaterial({ color: '#3a3e46', metalness: 0.7, roughness: 0.4 });
+    const haft = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.085, 2.05, 12), haftM);
+    haft.position.set(0, 0.2, 0);
+    const wrap1 = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.16, 10), wrapM);
+    wrap1.position.set(0, -0.45, 0);
+    const wrap2 = wrap1.clone(); wrap2.position.y = -0.72;
+    const pommel = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 8), darkH);
+    pommel.position.set(0, -0.9, 0);
+    const head = new THREE.Group();
+    head.position.set(0, 1.25, 0);
+    const block = new THREE.Mesh(new RoundedBoxGeometry(0.95, 0.62, 0.55, 2, 0.05), steelH);
+    const face = new THREE.Mesh(new RoundedBoxGeometry(0.28, 0.52, 0.48, 2, 0.04), darkH);
+    face.position.x = 0.52;
+    const face2 = face.clone(); face2.position.x = -0.52;
+    const spike = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.34, 8), darkH);
+    spike.rotation.z = Math.PI / 2; spike.position.set(0.78, 0, 0);
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.16, 10), darkH);
+    band.position.y = -0.38;
+    head.add(block, face, face2, spike, band);
+    g.add(haft, wrap1, wrap2, pommel, head);
+    g.userData.head = head;
+    // Scale/pull back so the full haft+head stays in FOV; rest tilt is mild
+    g.userData.fp = { scale: 0.52, pos: [0.36, -0.38, -1.05], rot: [0.12, 0.28, -0.18] };
+  } else if (kind === 'tazer' && skin === 'magnet') {
+    const mag = buildMagnetModel();
+    g.add(mag);
+    g.userData.tip = mag.userData.tip;
+    g.userData.prongs = mag.userData.prongs;
+    g.userData.field = mag.userData.field;
+    g.userData.rings = mag.userData.rings;
+    g.userData.magnetArms = mag.userData.magnetArms;
+    // Grip the curved bend; poles aim forward
+    g.userData.fp = { scale: 1.42, pos: [0.3, -0.34, -0.42], rot: [0.12, 0.4, 0.08] };
+  } else if (kind === 'tazer') {
+    const bodyY = new THREE.MeshStandardMaterial({ color: '#f0d21a', metalness: 0.35, roughness: 0.4 });
+    const bodyB = new THREE.MeshStandardMaterial({ color: '#1a1e28', metalness: 0.7, roughness: 0.3 });
+    const glowT = new THREE.MeshStandardMaterial({ color: '#7ef6ff', emissive: '#3ad7ff', emissiveIntensity: 1.2, metalness: 0.4, roughness: 0.25 });
+    const grip = new THREE.Mesh(new RoundedBoxGeometry(0.09, 0.22, 0.12, 2, 0.02), bodyB);
+    grip.position.set(0, -0.14, 0.06); grip.rotation.x = 0.35;
+    const body = new THREE.Mesh(new RoundedBoxGeometry(0.14, 0.12, 0.28, 3, 0.025), bodyY);
+    body.position.set(0, 0.02, -0.06);
+    const stripe = new THREE.Mesh(new RoundedBoxGeometry(0.145, 0.04, 0.18, 2, 0.01), bodyB);
+    stripe.position.set(0, 0.04, -0.04);
+    const tip = new THREE.Mesh(new RoundedBoxGeometry(0.1, 0.08, 0.1, 2, 0.02), bodyB);
+    tip.position.set(0, 0.02, -0.26);
+    const prongL = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.16, 8), glowT);
+    prongL.rotation.x = Math.PI / 2; prongL.position.set(-0.03, 0.02, -0.36);
+    const prongR = prongL.clone(); prongR.position.x = 0.03;
+    const spark = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 8), glowT);
+    spark.position.set(0, 0.02, -0.44);
+    const trigger = new THREE.Mesh(new RoundedBoxGeometry(0.03, 0.05, 0.04, 2, 0.008), bodyB);
+    trigger.position.set(0, -0.04, 0.02);
+    g.add(grip, body, stripe, tip, prongL, prongR, spark, trigger);
+    g.userData.tip = spark;
+    g.userData.prongs = [prongL, prongR];
+    g.userData.fp = { scale: 1.15, pos: [0.32, -0.28, -0.48], rot: [0.08, 0.12, 0.05] };
+  } else if (kind === 'spear' && skin === 'mcspear') {
+    const spear = buildMinecraftDiamondSpear();
+    g.add(spear);
+    g.userData.tip = spear;
+    g.userData.fp = { scale: 1.15, pos: [0.32, -0.26, -0.58], rot: [0.1, 0.06, 0.04] };
+  } else if (kind === 'spear') {
+    const poleM = new THREE.MeshStandardMaterial({ color: '#6b4220', roughness: 0.72, metalness: 0.04 });
+    const wrapM = new THREE.MeshStandardMaterial({ color: '#3d2814', roughness: 0.8 });
+    const stoneM = new THREE.MeshStandardMaterial({ color: '#8a9098', roughness: 0.55, metalness: 0.25 });
+    const flintM = new THREE.MeshStandardMaterial({ color: '#5a6068', roughness: 0.4, metalness: 0.35 });
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.034, 1.55, 10), poleM);
+    pole.rotation.x = Math.PI / 2; pole.position.set(0, 0.02, -0.35);
+    const wrap = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.036, 0.14, 10), wrapM);
+    wrap.rotation.x = Math.PI / 2; wrap.position.set(0, 0.02, -1.05);
+    const head = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.28, 6), stoneM);
+    head.rotation.x = -Math.PI / 2; head.position.set(0, 0.02, -1.28);
+    const edge = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.16, 5), flintM);
+    edge.rotation.x = -Math.PI / 2; edge.position.set(0, 0.02, -1.4);
+    const butt = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 6), wrapM);
+    butt.position.set(0, 0.02, 0.42);
+    g.add(pole, wrap, head, edge, butt);
+    g.userData.tip = head;
+    g.userData.fp = { scale: 1.05, pos: [0.34, -0.28, -0.55], rot: [0.12, 0.08, 0.05] };
+  } else if (kind === 'shuriken') {
+    const paper = skin === 'papershuri';
+    const steelS = new THREE.MeshStandardMaterial({ color: '#c5ccd6', metalness: 0.88, roughness: 0.28 });
+    const darkS = new THREE.MeshStandardMaterial({ color: '#2a3038', metalness: 0.5, roughness: 0.45 });
+    const makeStar = (s = 1) => {
+      if (paper) return makePaperOrigamiStar(s);
+      const star = new THREE.Group();
+      for (let i = 0; i < 4; i++) {
+        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.22 * s, 0.035 * s, 0.04 * s), steelS);
+        blade.rotation.z = (i / 4) * Math.PI * 2;
+        star.add(blade);
+      }
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.035 * s, 0.035 * s, 0.03 * s, 10), darkS);
+      hub.rotation.x = Math.PI / 2;
+      star.add(hub);
+      return star;
+    };
+    // Exactly 3 stars in hand — diagonal top-left → bottom-right (last one smaller)
+    const stack = new THREE.Group();
+    const layout = [
+      { s: 1.05, x: -0.1, y: 0.12, z: -0.18, rx: 0.15, ry: -0.2, rz: -0.35 },
+      { s: 1.0, x: 0.02, y: 0.02, z: -0.26, rx: 0.2, ry: 0.05, rz: 0.2 },
+      { s: 0.62, x: 0.14, y: -0.12, z: -0.34, rx: 0.35, ry: 0.15, rz: 0.55 },
+    ];
+    const stars = [];
+    for (const L of layout) {
+      const st = makeStar(L.s);
+      st.position.set(L.x, L.y, L.z);
+      st.rotation.set(L.rx, L.ry, L.rz);
+      st.userData.base = { x: L.x, y: L.y, z: L.z, rx: L.rx, ry: L.ry, rz: L.rz, s: L.s };
+      stack.add(st);
+      stars.push(st);
+    }
+    g.add(stack);
+    g.userData.stack = stack;
+    g.userData.held = stars[1];
+    g.userData.stars = stars;
+    if (paper) {
+      const fold = makePaperFoldRig();
+      fold.position.set(0.02, 0.02, -0.2);
+      g.add(fold);
+      g.userData.fold = fold;
+    }
+    g.userData.fp = { scale: 1.25, pos: [0.3, -0.24, -0.48], rot: [0.06, 0.08, 0.02] };
   } else {
     const body = new THREE.Mesh(new RoundedBoxGeometry(0.15, 0.16, 0.48, 4, 0.045), lime);
     const bodyR = new THREE.Mesh(new RoundedBoxGeometry(0.155, 0.11, 0.4, 3, 0.03), blue); bodyR.position.set(0, 0.01, 0.02);
@@ -4722,6 +5412,10 @@ function makeShopIcon(kind) {
   else if (kind === 'water') drawIconWater(ctx);
   else if (kind === 'pirate') drawIconPirate(ctx);
   else if (kind === 'hook') drawIconHook(ctx);
+  else if (kind === 'mcspear') drawIconMcSpear(ctx);
+  else if (kind === 'papershuri') drawIconPaperShuri(ctx);
+  else if (kind === 'mjolnir') drawIconMjolnir(ctx);
+  else if (kind === 'magnet') drawIconMagnet(ctx);
   else if (kind === 'paintball' || kind === 'starter') drawIconPaintball(ctx);
   else if (kind === 'bow') drawIconBow(ctx);
   else if (kind === 'slingshot') drawIconSlingshot(ctx);
@@ -4735,6 +5429,10 @@ function makeShopIcon(kind) {
   else if (kind === 'spray') drawIconSpray(ctx);
   else if (kind === 'canon') drawIconCanon(ctx);
   else if (kind === 'lasso') drawIconLasso(ctx);
+  else if (kind === 'spear') drawIconSpear(ctx);
+  else if (kind === 'shuriken') drawIconShuriken(ctx);
+  else if (kind === 'hammer') drawIconHammer(ctx);
+  else if (kind === 'tazer') drawIconTazer(ctx);
   else if (kind === 'grenade') drawIconGrenade(ctx);
   else if (kind === 'landmine') drawIconMine(ctx);
   else if (kind === 'jumppad') drawIconPad(ctx);
@@ -4743,8 +5441,39 @@ function makeShopIcon(kind) {
   else if (kind === 'exploder') drawIconExploder(ctx);
   else if (kind === 'boulder') drawIconBoulder(ctx);
   else if (kind === 'skyboost') drawIconSky(ctx);
+  else if (kind === 'up_hp') drawIconUpHp(ctx);
+  else if (kind === 'up_dmg') drawIconUpDmg(ctx);
+  else if (kind === 'up_spd') drawIconUpSpd(ctx);
   ctx.restore();
   return c;
+}
+function drawIconUpHp(ctx) {
+  // Bigger heart so "+10" fits cleanly inside
+  ctx.fillStyle = '#ff5a7a';
+  ctx.beginPath();
+  ctx.moveTo(0, 52);
+  ctx.bezierCurveTo(-72, -8, -58, -62, 0, -36);
+  ctx.bezierCurveTo(58, -62, 72, -8, 0, 52);
+  strokeFill(ctx, '#2b2f3a', 4);
+  ctx.fillStyle = '#fff';
+  ctx.font = '900 28px "Segoe UI", Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('+10', 0, -4);
+}
+function drawIconUpDmg(ctx) {
+  ctx.fillStyle = '#ff8a3d';
+  ctx.beginPath(); ctx.moveTo(-8, -60); ctx.lineTo(18, -10); ctx.lineTo(4, -6); ctx.lineTo(28, 58); ctx.lineTo(-4, 8); ctx.lineTo(10, 4); ctx.closePath();
+  strokeFill(ctx);
+  ctx.fillStyle = '#ffd21f'; ctx.beginPath(); ctx.arc(-36, 36, 16, 0, Math.PI * 2); strokeFill(ctx);
+  ctx.fillStyle = '#2b2f3a'; ctx.font = '900 18px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('+1', -36, 37);
+}
+function drawIconUpSpd(ctx) {
+  ctx.fillStyle = '#3ec6ff';
+  ctx.beginPath(); ctx.moveTo(-70, 10); ctx.lineTo(-10, -40); ctx.lineTo(10, -18); ctx.lineTo(70, -50); ctx.lineTo(40, 10); ctx.lineTo(18, -4); ctx.lineTo(-20, 42); ctx.closePath();
+  strokeFill(ctx);
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-52, 28); ctx.lineTo(-28, 28); ctx.moveTo(-48, 42); ctx.lineTo(-18, 42); ctx.stroke();
 }
 function strokeFill(ctx, stroke = '#2b2f3a', lw = 4) {
   ctx.lineWidth = lw; ctx.strokeStyle = stroke; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke(); ctx.fill();
@@ -4922,33 +5651,124 @@ function drawIconSniper(ctx) {
   ctx.fillStyle = '#1a3040'; ctx.beginPath(); ctx.arc(-20, -19, 8, 0, Math.PI * 2); strokeFill(ctx);
   ctx.fillStyle = '#6b3f1a'; roundRect(ctx, -70, 8, 40, 22, 6); strokeFill(ctx);
 }
-function drawIconLasso(ctx) {
+function drawIconHammer(ctx) {
+  ctx.fillStyle = '#6b4220'; roundRect(ctx, -12, -55, 24, 110, 8); strokeFill(ctx);
+  ctx.fillStyle = '#3d2814'; roundRect(ctx, -18, 20, 36, 18, 5); strokeFill(ctx);
+  ctx.fillStyle = '#8a9098';
+  roundRect(ctx, -55, -70, 110, 48, 10); strokeFill(ctx);
+  ctx.fillStyle = '#5a6068';
+  roundRect(ctx, -62, -62, 18, 32, 5); strokeFill(ctx);
+  roundRect(ctx, 44, -62, 18, 32, 5); strokeFill(ctx);
+  ctx.fillStyle = '#3a3e46';
+  ctx.beginPath(); ctx.moveTo(62, -46); ctx.lineTo(88, -46); ctx.lineTo(72, -30); ctx.closePath(); strokeFill(ctx);
+}
+function drawIconMjolnir(ctx) {
+  ctx.fillStyle = '#4a3424'; roundRect(ctx, -10, -20, 20, 85, 6); strokeFill(ctx);
+  ctx.fillStyle = '#6a4a32';
+  for (let i = 0; i < 8; i++) { roundRect(ctx, -14, -10 + i * 10, 28, 5, 2); ctx.fill(); }
+  ctx.fillStyle = '#aeb6bf'; roundRect(ctx, -52, -72, 104, 58, 10); strokeFill(ctx);
+  ctx.fillStyle = '#6e767f'; roundRect(ctx, -46, -78, 92, 12, 4); strokeFill(ctx);
+  roundRect(ctx, -46, -22, 92, 12, 4); strokeFill(ctx);
+  ctx.fillStyle = '#2a3038'; roundRect(ctx, -36, -66, 72, 10, 3); strokeFill(ctx);
+  roundRect(ctx, -36, -34, 72, 10, 3); strokeFill(ctx);
+  ctx.fillStyle = '#aeb6bf'; ctx.beginPath(); ctx.arc(0, -78, 12, 0, Math.PI * 2); strokeFill(ctx);
+  ctx.strokeStyle = '#6aa8ff'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(-8, -95); ctx.lineTo(0, -112); ctx.lineTo(10, -98); ctx.lineTo(18, -118); ctx.stroke();
+  ctx.fillStyle = '#4a3424'; ctx.beginPath(); ctx.ellipse(0, 72, 18, 10, 0, 0, Math.PI * 2); strokeFill(ctx);
+}
+function drawIconTazer(ctx) {
+  ctx.fillStyle = '#1a1e28'; roundRect(ctx, -18, 10, 36, 55, 8); strokeFill(ctx);
+  ctx.fillStyle = '#f0d21a'; roundRect(ctx, -40, -35, 80, 50, 10); strokeFill(ctx);
+  ctx.fillStyle = '#1a1e28'; roundRect(ctx, -40, -18, 80, 14, 4); strokeFill(ctx);
+  ctx.fillStyle = '#7ef6ff';
+  roundRect(ctx, -28, -55, 12, 28, 4); strokeFill(ctx);
+  roundRect(ctx, 16, -55, 12, 28, 4); strokeFill(ctx);
+  ctx.beginPath(); ctx.arc(0, -62, 10, 0, Math.PI * 2); strokeFill(ctx);
+  ctx.strokeStyle = '#3ad7ff'; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.moveTo(-20, -70); ctx.lineTo(-5, -88); ctx.lineTo(8, -74); ctx.lineTo(22, -95); ctx.stroke();
+}
+function drawIconMagnet(ctx) {
+  const cx = 0, cy = 4, r = 44;
+  const a0 = Math.PI * 0.72, a1 = Math.PI * 0.28;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  const strand = (w, color) => { ctx.strokeStyle = color; ctx.lineWidth = w; ctx.stroke(); };
-  ctx.beginPath();
-  ctx.ellipse(32, -30, 34, 16, -0.15, 0, Math.PI * 2);
-  strand(10, '#d39245');
-  ctx.beginPath();
-  ctx.ellipse(32, -34, 24, 8, -0.15, Math.PI * 1.05, Math.PI * 1.9);
-  strand(3, '#f6d7a6');
-  ctx.beginPath();
-  ctx.ellipse(-26, -30, 30, 15, 0.12, 0, Math.PI * 2);
-  strand(10, '#e0a45a');
-  ctx.beginPath();
-  ctx.ellipse(-26, -34, 20, 7, 0.12, Math.PI * 1.1, Math.PI * 1.95);
-  strand(3, '#f8e0b8');
-  ctx.beginPath();
-  ctx.moveTo(-2, -16);
-  ctx.bezierCurveTo(-6, 2, -34, 10, -28, 34);
-  ctx.bezierCurveTo(-22, 56, -46, 58, -30, 42);
-  ctx.bezierCurveTo(-8, 20, 4, 48, 10, 70);
-  ctx.bezierCurveTo(16, 90, -6, 98, 8, 112);
-  strand(9, '#e2a85c');
-  ctx.beginPath();
-  ctx.moveTo(2, -12);
-  ctx.bezierCurveTo(-2, 4, -28, 14, -24, 32);
-  strand(3, '#f4d09a');
+  ctx.strokeStyle = '#c01818'; ctx.lineWidth = 26;
+  ctx.beginPath(); ctx.arc(cx, cy, r, a0, a1, true); ctx.stroke();
+  ctx.strokeStyle = '#e03131'; ctx.lineWidth = 20;
+  ctx.beginPath(); ctx.arc(cx, cy, r, a0, a1, true); ctx.stroke();
+  const tip = (a) => {
+    const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
+    ctx.fillStyle = '#d0d6de';
+    ctx.beginPath(); ctx.arc(x, y, 13, 0, Math.PI * 2); strokeFill(ctx, '#8a929e', 2);
+  };
+  tip(a0); tip(a1);
+  ctx.strokeStyle = '#9ad0ff'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(cx, cy + r * 0.55, 18, 0.25, Math.PI - 0.25); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx, cy + r * 0.55, 28, 0.35, Math.PI - 0.35); ctx.stroke();
+  ctx.fillStyle = '#ffd21f';
+  ctx.beginPath(); ctx.arc(cx, cy + r * 0.72, 7, 0, Math.PI * 2); strokeFill(ctx);
+}
+function drawIconSpear(ctx) {
+  ctx.fillStyle = '#6b4220'; roundRect(ctx, -70, -8, 110, 16, 6); strokeFill(ctx);
+  ctx.fillStyle = '#8a9098';
+  // Tip points outward (right) — base against the shaft
+  ctx.beginPath(); ctx.moveTo(40, -16); ctx.lineTo(40, 16); ctx.lineTo(92, 0); ctx.closePath(); strokeFill(ctx);
+  ctx.fillStyle = '#5a6068';
+  ctx.beginPath(); ctx.moveTo(68, -10); ctx.lineTo(68, 10); ctx.lineTo(102, 0); ctx.closePath(); strokeFill(ctx, '#2b2f3a', 2);
+  ctx.fillStyle = '#3d2814'; roundRect(ctx, -20, -12, 22, 24, 4); strokeFill(ctx);
+}
+function drawIconMcSpear(ctx) {
+  // Exact Held_Diamond_Spear_JE2_BE1 32×32, centered and scaled to fill the shop card
+  const s = 4.6;
+  const ox = -16 * s, oy = -16 * s;
+  ctx.imageSmoothingEnabled = false;
+  for (let y = 0; y < 32; y++) {
+    const cols = MC_DIAMOND_SPEAR[y].split(',');
+    for (let x = 0; x < 32; x++) {
+      const c = cols[x];
+      if (!c || c === '.') continue;
+      ctx.fillStyle = c;
+      ctx.fillRect(ox + x * s, oy + y * s, s + 0.2, s + 0.2);
+    }
+  }
+}
+function drawIconPaperShuri(ctx) {
+  const blade = (rot, teal) => {
+    ctx.save(); ctx.rotate(rot);
+    ctx.fillStyle = teal ? '#2dd4bf' : '#f7fafc';
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(18, 0); ctx.lineTo(0, 38); ctx.closePath();
+    strokeFill(ctx, '#2b2f3a', 2);
+    ctx.fillStyle = teal ? '#14b8a6' : '#e2e8f0';
+    ctx.fillRect(-6, 4, 8, 22);
+    ctx.restore();
+  };
+  blade(0, true); blade(Math.PI / 2, false); blade(Math.PI, true); blade(Math.PI * 1.5, false);
+  ctx.fillStyle = '#14b8a6'; roundRect(ctx, -8, -8, 16, 16, 2); strokeFill(ctx, '#2b2f3a', 2);
+}
+function drawIconShuriken(ctx) {
+  const star = (x, y, s) => {
+    ctx.save(); ctx.translate(x, y);
+    ctx.fillStyle = '#c5ccd6';
+    for (let i = 0; i < 4; i++) {
+      ctx.save(); ctx.rotate((i / 4) * Math.PI * 2);
+      roundRect(ctx, -s * 0.15, -s, s * 0.3, s * 2, 3); ctx.fill(); ctx.restore();
+    }
+    ctx.fillStyle = '#2a3038'; ctx.beginPath(); ctx.arc(0, 0, s * 0.28, 0, Math.PI * 2); strokeFill(ctx, '#2b2f3a', 2);
+    ctx.restore();
+  };
+  star(-28, 8, 18); star(18, -6, 26); star(52, 18, 14);
+}
+function drawIconLasso(ctx) {
+  // Classic gold-ring lasso icon
+  ctx.strokeStyle = '#e8c56a'; ctx.lineWidth = 8; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.arc(8, -6, 36, 0.4, Math.PI * 2 - 0.2); ctx.stroke();
+  ctx.strokeStyle = '#f4e2b0'; ctx.lineWidth = 6;
+  ctx.beginPath(); ctx.moveTo(-18, 28); ctx.quadraticCurveTo(-40, 10, -8, -6); ctx.stroke();
+  ctx.fillStyle = '#f6d56b'; ctx.fillRect(-6, -14, 14, 14);
+  ctx.fillStyle = '#ff8a3d'; ctx.fillRect(10, -4, 12, 12);
+  ctx.fillStyle = '#fff4c8'; ctx.fillRect(-2, 6, 11, 11);
+  ctx.strokeStyle = '#2b2f3a'; ctx.lineWidth = 3;
+  ctx.strokeRect(-6, -14, 14, 14); ctx.strokeRect(10, -4, 12, 12); ctx.strokeRect(-2, 6, 11, 11);
 }
 function drawIconPaintbrush(ctx) {
   ctx.fillStyle = '#c47a3a'; roundRect(ctx, -10, -55, 20, 70, 6); strokeFill(ctx);
@@ -5295,6 +6115,14 @@ function makeSlimeMesh(q) {
   else if (q.wskin === 'water') { gun.position.set(0.05, 0.0, -0.22); gun.scale.setScalar(0.88); gun.rotation.set(0.08, 0.08, 0.04); }
   else if (q.wskin === 'pirate') { gun.position.set(0.06, 0.0, -0.26); gun.scale.setScalar(0.82); gun.rotation.set(0.1, 0.04, 0.02); }
   else if (q.wskin === 'hook') { gun.position.set(0.48, 0.28, -0.08); gun.scale.setScalar(0.95); gun.rotation.set(-0.55, 0.35, -0.1); }
+  else if (q.wskin === 'mcspear') { gun.position.set(0.1, 0.02, -0.38); gun.scale.setScalar(0.78); gun.rotation.set(0.12, 0.08, 0.04); }
+  else if (q.wskin === 'papershuri') { gun.position.set(0.08, 0.02, -0.22); gun.scale.setScalar(0.92); gun.rotation.set(0.1, 0.15, 0.05); }
+  else if (q.wskin === 'mjolnir') { gun.position.set(0.22, 0.1, -0.24); gun.scale.setScalar(0.92); gun.rotation.set(0.42, 0.38, -0.5); }
+  else if (q.wskin === 'magnet') { gun.position.set(0.1, 0.02, -0.2); gun.scale.setScalar(1.12); gun.rotation.set(0.35, 0.45, -0.05); }
+  else if (gunKind === 'spear') { gun.position.set(0.1, 0.02, -0.35); gun.scale.setScalar(0.72); gun.rotation.set(0.15, 0.1, 0.05); }
+  else if (gunKind === 'hammer') { gun.position.set(0.22, 0.08, -0.22); gun.scale.setScalar(0.95); gun.rotation.set(0.45, 0.4, -0.55); }
+  else if (gunKind === 'tazer') { gun.position.set(0.1, 0.02, -0.22); gun.scale.setScalar(0.95); gun.rotation.set(0.1, 0.15, 0.05); }
+  else if (gunKind === 'shuriken') { gun.position.set(0.08, 0.02, -0.22); gun.scale.setScalar(0.9); gun.rotation.set(0.1, 0.15, 0.05); }
   else if (gunKind === 'bow') { gun.position.set(0.05, 0.02, -0.2); gun.scale.setScalar(0.75); gun.rotation.set(0.05, 0.4, -0.15); }
   else if (gunKind === 'slingshot') { gun.position.set(0.05, 0.0, -0.22); gun.scale.setScalar(0.85); gun.rotation.set(0.15, 0.12, 0.1); }
   else if (gunKind === 'rpg') { gun.position.set(0.06, 0.02, -0.22); gun.scale.setScalar(0.8); }
@@ -5306,7 +6134,7 @@ function makeSlimeMesh(q) {
   else if (gunKind === 'shotgun') { gun.position.set(0.05, 0.0, -0.24); gun.scale.setScalar(0.78); }
   else if (gunKind === 'spray') { gun.position.set(0.05, 0.0, -0.22); gun.scale.setScalar(0.8); }
   else if (gunKind === 'canon') { gun.position.set(0.06, 0.02, -0.22); gun.scale.setScalar(0.74); }
-  else if (gunKind === 'lasso') { gun.position.set(0.58, 0.48, 0.02); gun.scale.setScalar(1.05); gun.rotation.set(0.15, 0.35, -0.15); }
+  else if (gunKind === 'lasso') { gun.position.set(0.34, 0.28, -0.02); gun.scale.setScalar(0.62); gun.rotation.set(0.15, 0.85, -0.3); }
   else { gun.position.set(0.06, 0.02, -0.24); gun.scale.setScalar(0.92); }
   orb.add(gun);
   inner.add(orb);
@@ -5350,6 +6178,9 @@ const gun = {
   xbowLoaded: false,
   sprayLeft: 0, sprayT: 0, sprayDir: [0, 0, -1],
   canonCd: 0, canonFlight: 0, canonShock: 0, canonDidLift: false,
+  spearAnim: 0, shuriBurst: 0, shuriGap: 0, shuriHeld: false,
+  hammerAnim: 0, hammerLeap: null, hammerMark: null,
+  tazeOn: false, tazeCaught: [], tazeBolts: null,
 };
 let hpFlash = 0, lastHp = MAX_HP;
 let lobby = null;
@@ -5363,7 +6194,7 @@ function equippedGun(q) {
   const scale = n => n == null ? n : Math.max(1, Math.round(n * mul));
   const cdMul = Math.max(0.55, 1 - lv * 0.04);
   const cool = n => Math.max(0.08, Math.round(n * cdMul * 100) / 100);
-  const cools = g.id === 'bow' || g.id === 'rpg' || g.id === 'gauntlet' || g.id === 'sniper' || g.id === 'paintbrush' || g.id === 'laser' || g.id === 'crossbow' || g.id === 'shotgun' || g.id === 'canon';
+  const cools = g.id === 'bow' || g.id === 'rpg' || g.id === 'gauntlet' || g.id === 'sniper' || g.id === 'paintbrush' || g.id === 'laser' || g.id === 'crossbow' || g.id === 'shotgun' || g.id === 'canon' || g.id === 'spear' || g.id === 'shuriken' || g.id === 'hammer' || g.id === 'tazer';
   const explosive = g.id === 'rpg' || g.id === 'laser' || g.id === 'canon';
   const blastAdd = explosive ? Math.floor(lv / 5) * BOMB_R * 0.1 : 0;
   const out = { ...g, dmg: scale(g.dmg), scopeDmg: scale(g.scopeDmg), maxDmg: scale(g.maxDmg), sweepDmg: scale(g.sweepDmg) };
@@ -5375,7 +6206,15 @@ function equippedGun(q) {
   if (g.id === 'paintball') out.ammo = (g.ammo || 0) + lv;
   else if (g.id === 'slingshot') out.ammo = (g.ammo || 0) + lv * 2;
   else if (g.id === 'spray') out.ammo = (g.ammo || 0) + lv;
+  else if (g.id === 'shuriken') out.ammo = (g.ammo || 0) + Math.floor(lv / 2);
   if (g.id === 'gauntlet') out.melee = Math.round(((g.melee || 3) + lv * 0.1) * 10) / 10;
+  if (g.id === 'spear') out.melee = Math.round(((g.melee || 5.2) + lv * 0.08) * 10) / 10;
+  if (g.id === 'hammer') {
+    out.melee = Math.round(((g.melee || 3.4) + lv * 0.06) * 10) / 10;
+    out.smashDmg = Math.round((g.smashDmg || 250) * (1 + lv * 0.05));
+    out.smashR = Math.round(((g.smashR || 3) + lv * 0.05) * 10) / 10;
+  }
+  if (g.id === 'tazer') out.melee = Math.round(((g.melee || 2) + lv * 0.05) * 10) / 10;
   if (g.id === 'paintbrush') out.walkRadius = Math.round((2.6 + lv * 0.15) * 100) / 100;
   if (g.id === 'lasso') {
     out.lassoCap = 10 + Math.floor(lv / 2);
@@ -5423,15 +6262,25 @@ function lassoCapOf(q) {
 function maxAmmoFor(q) { return equippedGun(q).ammo; }
 
 function makePlayer(d, slot) {
+  const local = d.id === myCid;
+  const ps = local ? personalFromUp(profile.up) : personalFromUp(d.up || {});
+  const usePs = local || (!d.npc && !!d.up);
+  const hpBonus = d.npc ? (d.hpBonus || 0) : (usePs ? ps.hpBonus : (d.hpBonus || 0));
   const q = {
     id: d.id, name: d.name, team: d.team, skin: d.skin, gun: d.gun || 'paintball', accessory: d.accessory || 'grenade',
-    npc: !!d.npc, local: d.id === myCid, slot,
+    npc: !!d.npc, local, slot,
     x: 0, y: 1, z: 0, vx: 0, vy: 0, vz: 0, yaw: SPAWN_YAW[d.team], pitch: 0, onGround: false, coyote: 0,
-    hp: MAX_HP + (d.hpBonus || 0), alive: true, respawnT: 0, deadT: 0, lastHit: -99, shieldT: 0, dash: 0, item: null, itemT: 0,
-    maxHp: MAX_HP + (d.hpBonus || 0), gunLv: d.gunLv || 0, accLv: d.accLv || 0, wskin: d.wskin || '',
+    hp: MAX_HP + hpBonus, alive: true, respawnT: 0, deadT: 0, lastHit: -99, shieldT: 0, dash: 0, item: null, itemT: 0,
+    maxHp: MAX_HP + hpBonus, gunLv: d.gunLv || 0, accLv: d.accLv || 0, wskin: d.wskin || '',
     zombie: !!d.zombie, aimRank: d.aimRank || null, zDiff: d.zDiff || 0,
     guardUntil: d.spawnGuard ? gameTime + d.spawnGuard : 0,
     walkMul: d.walkMul || 1,
+    up: usePs ? ps.up : null,
+    invincible: usePs ? ps.invincible : !!d.invincible,
+    onePunch: usePs ? ps.onePunch : !!d.onePunch,
+    dmgBonus: usePs ? ps.dmgBonus : (d.dmgBonus || 0),
+    spdAdd: usePs ? ps.spdAdd : (d.spdAdd || 0),
+    flash: usePs ? ps.flash : !!d.flash,
     bombCd: 1.5, fireCd: 0, tgt: null, seen: performance.now(), anim: Math.random() * 10,
     boulderRide: false, skyBoost: false, skyAir: false, skyRingT: 0,
     ai: { target: null, t: 0, hop: 0, stuck: 0, lx: 0, lz: 0 },
@@ -5452,6 +6301,7 @@ function spawnAt(q) {
   q.x = x; q.y = y; q.z = z; q.vx = q.vy = q.vz = 0; q.yaw = SPAWN_YAW[q.team]; q.pitch = 0;
   q.boulderRide = false;
   q.lassoSlam = null;
+  q.tazed = null; q.tazeFling = null; q.tazeBoomDone = false;
   q.skyBoost = false; q.skyAir = false;
   q.tgt = { x, y, z, yaw: q.yaw };
 }
@@ -5513,7 +6363,7 @@ function moveBody(q, wx, wz, jump, dt, touched) {
   const lifting = q.canonLift > 0;
   const skyFall = q.skyBoost && q.vy <= 4;
   const skyAcc = skyFall ? equippedAcc(q) : null;
-  const spd = SPEED * (q.dash > 0 ? 1.4 : 1) * (q.walkMul || 1);
+  const spd = SPEED * (q.dash > 0 ? 1.4 : 1) * (q.walkMul || 1) + (q.spdAdd || 0);
   const acc = q.onGround ? 45 : (lifting || q.skyBoost ? 36 : 16);
   q.vx = approach(q.vx, wx * spd, acc * dt);
   q.vz = approach(q.vz, wz * spd, acc * dt);
@@ -5610,6 +6460,23 @@ function makeProjectileMesh(kind, team, look) {
     const b = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.05, 0.16), mat); b.position.z = -0.04;
     const c = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.016, 0.14), mat); c.position.z = 0.06;
     g.add(core, a, b, c);
+    return g;
+  }
+  if (look === 'shuriken' || look === 'papershuri') {
+    if (look === 'papershuri') {
+      g.add(makePaperOrigamiStar(1.15));
+      return g;
+    }
+    const steelS = new THREE.MeshStandardMaterial({ color: '#d0d6de', metalness: 0.9, roughness: 0.25, emissive: TEAMS[team].color, emissiveIntensity: 0.25 });
+    const darkS = new THREE.MeshStandardMaterial({ color: '#2a3038', metalness: 0.55, roughness: 0.4 });
+    for (let i = 0; i < 4; i++) {
+      const blade = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.04, 0.05), steelS);
+      blade.rotation.z = (i / 4) * Math.PI * 2;
+      g.add(blade);
+    }
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.035, 10), darkS);
+    hub.rotation.x = Math.PI / 2;
+    g.add(hub);
     return g;
   }
   if (look === 'star') {
@@ -5888,17 +6755,17 @@ function fireShot(q, dx, dy, dz, dmg, kind = 'shot', opts = {}) {
   if (kind === 'plasma') spd *= 1.15 * 3;
   const o = [q.x + dx * 0.45, q.y + EYE - 0.02 + dy * 0.45, q.z + dz * 0.45];
   const v = [dx * spd, dy * spd, dz * spd];
-  const paintR = kind === 'arrow' || kind === 'bolt' ? 1.15 : kind === 'rocket' ? 1.6 : kind === 'sniper' ? 0.7 : kind === 'plasma' ? 2 : 0.95;
+  const paintR = opts.paintR != null ? opts.paintR : (kind === 'arrow' || kind === 'bolt' ? 1.15 : kind === 'rocket' ? 1.6 : kind === 'sniper' ? 0.7 : kind === 'plasma' ? 2 : 0.95);
   const maxDist = (kind === 'arrow' || kind === 'bolt' || kind === 'rocket' || kind === 'sniper' || kind === 'spray' || kind === 'plasma') ? BOW_RANGE : SHOT_RANGE;
   const eg = equippedGun(q);
   const blast = kind === 'rocket' ? (eg.id === 'rpg' ? eg.blast : (gunById('rpg').blast || 3.8)) : (kind === 'plasma' ? (eg.id === 'canon' ? (eg.blast || 0) : 0) : 0);
   const wid = (q && q.local && equippedWskin(eg.id)) || (q && q.wskin && wskinById(q.wskin) && wskinById(q.wskin).gun === eg.id ? q.wskin : '') || eg.id;
   spawnProjectile(kind, q.team, q.id, o, v, isHost(), { dmg, paintR, maxDist, knock: kind === 'rocket' ? (eg.knock || gunById('rpg').knock || 32) : 0, blast, trail: !!opts.trail, trailR: opts.trailR || 1.0, weapon: wid, look: opts.look || '' });
-  const muzzle = opts.look === 'zap' ? '#7ef6ff' : opts.look === 'wind' ? '#f7fbff' : opts.look === 'balloon' ? '#ff7ad9' : opts.look === 'paper' ? '#f4ecdc' : opts.look === 'needle' ? '#f4f1e4' : opts.look === 'dragon' ? '#ff4a00' : opts.look === 'fire' ? '#ff6a1a' : opts.look === 'water' ? '#4fc3f7' : opts.look === 'cannonball' ? '#5a5e66' : (opts.look === 'star' || opts.look === 'beam') ? '#ffe27a' : (kind === 'rocket' ? '#ff9a3a' : TEAMS[q.team].css);
+  const muzzle = opts.look === 'zap' ? '#7ef6ff' : opts.look === 'wind' ? '#f7fbff' : opts.look === 'balloon' ? '#ff7ad9' : opts.look === 'paper' ? '#f4ecdc' : opts.look === 'needle' ? '#f4f1e4' : opts.look === 'dragon' ? '#ff4a00' : opts.look === 'fire' ? '#ff6a1a' : opts.look === 'water' ? '#4fc3f7' : opts.look === 'cannonball' ? '#5a5e66' : opts.look === 'papershuri' ? '#2dd4bf' : opts.look === 'shuriken' ? '#c5ccd6' : (opts.look === 'star' || opts.look === 'beam') ? '#ffe27a' : (kind === 'rocket' ? '#ff9a3a' : TEAMS[q.team].css);
   if (kind !== 'plasma') burst(o[0], o[1], o[2], kind === 'rocket' ? 14 : kind === 'arrow' || kind === 'bolt' ? 10 : 6, muzzle, 3, { life: 0.2, size: 0.55, up: 0.2 });
   else if (opts.look === 'cannonball') burst(o[0], o[1], o[2], 16, '#4a4e56', 5, { life: 0.28, size: 0.7, up: 0.15 });
   else singularityBits(o[0], o[1], o[2], 8);
-  send({ t: 'fire', k: kind, team: q.team, id: q.id, o: o.map(r2), v: v.map(r2), dmg: r2(dmg), maxDist: r2(maxDist), tr: opts.trail ? 1 : 0, blast: r2(blast), w: wid, look: opts.look || '' });
+  send({ t: 'fire', k: kind, team: q.team, id: q.id, o: o.map(r2), v: v.map(r2), dmg: r2(dmg), maxDist: r2(maxDist), tr: opts.trail ? 1 : 0, blast: r2(blast), w: wid, look: opts.look || '', pr: r2(paintR) });
   if (q.local) sfx(opts.sfx || (kind === 'plasma' ? 'shoot_canon' : kind === 'spray' ? 'shoot_spray' : kind === 'bolt' ? 'shoot_crossbow' : kind === 'arrow' ? 'shoot_bow' : kind === 'rocket' ? 'shoot_rpg' : kind === 'sniper' ? 'shoot_sniper' : kind === 'shot' && equippedGun(q).id === 'slingshot' ? 'shoot_sling' : 'shoot'));
 }
 function plasmaImpact(x, y, z, team, auth, extra = 0) {
@@ -6044,6 +6911,627 @@ function fireGauntlet(q) {
   if (isHost()) applyGauntletHit(q.x, q.y, q.z, dx, dy, dz, range, q.team, gdef.dmg, q.id);
   send({ t: 'pulse', id: q.id, team: q.team, o: [r2(ox), r2(oy), r2(oz)], d: [r2(dx), r2(dy), r2(dz)], r: range, dmg: gdef.dmg, px: r2(q.x), py: r2(q.y), pz: r2(q.z) });
   if (q.local) sfx('shoot_gauntlet');
+}
+function spearSpeedDmg(q, base) {
+  const spd = Math.hypot(q.vx || 0, q.vz || 0);
+  // Standing = base. Sprint-ish (~7+) approaches ~2×. Caps at 2.25×.
+  return Math.round(base * (1 + Math.min(1.25, spd / 7)));
+}
+function hammerDust(x, y, z, big = false) {
+  const n = big ? 42 : 26;
+  const cols = ['#c4a574', '#8a7355', '#e8dcc8', '#6b5340', '#d2b48c'];
+  for (let i = 0; i < n; i++) {
+    const c = cols[i % cols.length];
+    burst(x + (Math.random() - 0.5) * (big ? 2.2 : 1.1), y + Math.random() * 0.4, z + (Math.random() - 0.5) * (big ? 2.2 : 1.1), 1, c, big ? 5.5 : 3.2, { life: big ? 0.7 : 0.45, size: big ? 1.1 : 0.7, up: big ? 2.2 : 1.2, g: 0.08 });
+  }
+}
+function hammerAimPoint(q, dx, dy, dz) {
+  // Smash only counts when the cursor actually hits solid ground / a block top — never sky or OOB
+  const block = rayBlock(q, dx, dy, dz, 36);
+  if (!block) return null;
+  let ix = block.x, iy = block.y, iz = block.z;
+  if (ix < 1 || iz < 1 || ix >= X - 1 || iz >= Z - 1) return null;
+  // Stand on the top of the hit column
+  let top = iy;
+  while (top + 1 < Y && solidAt(ix, top + 1, iz)) top++;
+  const footY = top + 1;
+  if (footY >= Y) return null;
+  if (solidAt(ix, footY, iz) || solidAt(ix, footY + 1, iz)) return null;
+  return { x: ix + 0.5, y: footY, z: iz + 0.5, ok: true };
+}
+let hammerGraph = null;
+function ensureHammerGraph() {
+  if (hammerGraph) return hammerGraph;
+  const g = new THREE.Group();
+  g.visible = false;
+  const discMat = new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.22, depthWrite: false, side: THREE.DoubleSide });
+  const ringMat = new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.85, depthWrite: false, side: THREE.DoubleSide });
+  const chargeMat = new THREE.MeshBasicMaterial({ color: '#ffd21f', transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide });
+  const disc = new THREE.Mesh(new THREE.CircleGeometry(1, 48), discMat);
+  disc.rotation.x = -Math.PI / 2;
+  const rim = new THREE.Mesh(new THREE.RingGeometry(0.88, 1.02, 48), ringMat);
+  rim.rotation.x = -Math.PI / 2;
+  rim.position.y = 0.02;
+  // Edgar-style charge ring (fills with charge)
+  const charge = new THREE.Mesh(new THREE.RingGeometry(1.08, 1.22, 48, 1, 0, Math.PI * 2), chargeMat);
+  charge.rotation.x = -Math.PI / 2;
+  charge.position.y = 0.03;
+  // Direction wedge on the pad
+  const wedge = new THREE.Mesh(new THREE.CircleGeometry(1, 3), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide }));
+  wedge.rotation.x = -Math.PI / 2;
+  wedge.position.y = 0.04;
+  wedge.scale.set(0.55, 0.55, 0.9);
+  // Trajectory arc (player → apex → land)
+  const trajPts = [];
+  for (let i = 0; i <= 24; i++) trajPts.push(new THREE.Vector3());
+  const trajGeo = new THREE.BufferGeometry().setFromPoints(trajPts);
+  const traj = new THREE.Line(trajGeo, new THREE.LineBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.85 }));
+  // Cross when aim invalid
+  const bad = new THREE.Group();
+  const badMat = new THREE.MeshBasicMaterial({ color: '#ff5a5a', transparent: true, opacity: 0.9, depthWrite: false });
+  const b1 = new THREE.Mesh(new THREE.PlaneGeometry(0.15, 1.4), badMat);
+  const b2 = b1.clone(); b1.rotation.z = Math.PI / 4; b2.rotation.z = -Math.PI / 4;
+  bad.add(b1, b2); bad.rotation.x = -Math.PI / 2; bad.visible = false;
+  g.add(disc, rim, charge, wedge, traj, bad);
+  scene.add(g);
+  hammerGraph = { g, disc, rim, charge, chargeMat, discMat, ringMat, wedge, traj, trajPts, trajGeo, bad, rad: 3 };
+  return hammerGraph;
+}
+function hideHammerGraph() {
+  if (hammerGraph) hammerGraph.g.visible = false;
+}
+function updateHammerGraph(q, pt, chargeT, need) {
+  const H = ensureHammerGraph();
+  const rad = equippedGun(q).smashR || 3;
+  H.rad = rad;
+  const t = Math.min(1, chargeT / (need || 3));
+  const ready = !!pt && t >= 1;
+  const teamCss = TEAMS[q.team].css;
+  H.g.visible = true;
+  if (pt) {
+    H.disc.visible = H.rim.visible = H.charge.visible = H.wedge.visible = H.traj.visible = true;
+    H.bad.visible = false;
+    H.g.position.set(pt.x, pt.y + 0.06, pt.z);
+    H.disc.scale.setScalar(rad);
+    H.rim.scale.setScalar(rad);
+    H.charge.scale.setScalar(rad);
+    H.discMat.color.set(teamCss);
+    H.ringMat.color.set(ready ? '#ffd21f' : teamCss);
+    H.chargeMat.color.set(ready ? '#ffd21f' : '#ffffff');
+    H.discMat.opacity = 0.14 + t * 0.18;
+    H.ringMat.opacity = 0.45 + t * 0.45;
+    H.chargeMat.opacity = 0.35 + t * 0.55;
+    // Fill ring by rebuilding theta length
+    H.charge.geometry.dispose();
+    H.charge.geometry = new THREE.RingGeometry(1.08, 1.22, 48, 1, -Math.PI / 2, Math.PI * 2 * Math.max(0.02, t));
+    const ang = Math.atan2(pt.x - q.x, pt.z - q.z);
+    H.wedge.rotation.z = ang;
+    H.wedge.material.color.set(ready ? '#ffd21f' : '#ffffff');
+    H.wedge.material.opacity = 0.35 + t * 0.45;
+    H.wedge.scale.set(0.45 * rad, 0.45 * rad, 0.75 * rad);
+    // Bezier hop graph (local to pad group)
+    const ox = pt.x, oy = pt.y + 0.06, oz = pt.z;
+    const sx = q.x - ox, sy = q.y + 0.15 - oy, sz = q.z - oz;
+    const tx = pt.x - ox, ty = pt.y + 0.08 - oy, tz = pt.z - oz;
+    const mx = (sx + tx) * 0.5, my = Math.max(sy, ty) + 10, mz = (sz + tz) * 0.5;
+    for (let i = 0; i <= 24; i++) {
+      const u = i / 24, omt = 1 - u;
+      H.trajPts[i].set(
+        omt * omt * sx + 2 * omt * u * mx + u * u * tx,
+        omt * omt * sy + 2 * omt * u * my + u * u * ty,
+        omt * omt * sz + 2 * omt * u * mz + u * u * tz
+      );
+    }
+    H.trajGeo.setFromPoints(H.trajPts);
+    H.traj.position.set(0, 0, 0);
+    H.traj.material.color.set(ready ? '#ffd21f' : teamCss);
+    H.traj.material.opacity = 0.35 + t * 0.55;
+  } else {
+    // Invalid aim: show red X a short distance ahead on look dir
+    H.disc.visible = H.rim.visible = H.charge.visible = H.wedge.visible = H.traj.visible = false;
+    H.bad.visible = true;
+    const [dx, dy, dz] = aimDir();
+    const d = 6;
+    H.g.position.set(q.x + dx * d, q.y + EYE + dy * d, q.z + dz * d);
+  }
+}
+function paintGrenades(x, y, z, team, auth, n = 1) {
+  const r = BOMB_R * n;
+  if (mapMode === 'splat') splatBurst(x, y, z, r, team, auth);
+  else forSphere(x, y, z, r, i => auth ? hostPaint(i, team) : setPaint(i, team));
+  if (auth) sfx('splat');
+}
+function fireHammerSlap(q) {
+  const gdef = equippedGun(q);
+  const range = gdef.melee || 3.4;
+  const dmg = gdef.dmg || 150;
+  let dx, dy, dz;
+  if (q.local) [dx, dy, dz] = aimDir();
+  else { const cp = Math.cos(q.pitch || 0); dx = -Math.sin(q.yaw) * cp; dy = Math.sin(q.pitch || 0); dz = -Math.cos(q.yaw) * cp; }
+  const ox = q.x + dx * 0.5, oy = q.y + EYE * 0.55, oz = q.z + dz * 0.5;
+  const hx = ox + dx * range * 0.7, hy = Math.max(0.2, oy + dy * range * 0.35 - 0.3), hz = oz + dz * range * 0.7;
+  paintGrenades(hx, hy, hz, q.team, isHost(), 1);
+  hammerDust(hx, hy, hz, false);
+  if (isHost()) {
+    for (const o of players.values()) {
+      if (o.team === q.team || !o.alive || spawnImmune(o) || o.id === q.id) continue;
+      const vx = o.x - q.x, vy = (o.y + 0.4) - (q.y + EYE * 0.55), vz = o.z - q.z;
+      const dist = Math.hypot(vx, vy, vz);
+      if (dist > range + 0.55) continue;
+      const dot = (vx * dx + vy * dy + vz * dz) / (dist || 1);
+      if (dot < 0.35) continue;
+      damage(o, dmg, q.team, q.id, 'hammer');
+      o.vx += dx * 10; o.vz += dz * 10; o.vy += 5; o.onGround = false;
+    }
+  }
+  burst(hx, hy + 0.2, hz, 18, TEAMS[q.team].css, 6, { life: 0.35, size: 0.9 });
+  send({ t: 'hammerSlap', id: q.id, team: q.team, o: [r2(ox), r2(oy), r2(oz)], d: [r2(dx), r2(dy), r2(dz)], h: [r2(hx), r2(hy), r2(hz)], r: range, dmg });
+  if (q.local) { gun.hammerAnim = 1; gun.autoCd = gdef.rate || 1; gun.recoil = 1.15; sfx('shoot_gauntlet'); }
+}
+function hammerSmashLand(q, x, y, z, authDmg = true) {
+  const gdef = equippedGun(q);
+  const dmg = gdef.smashDmg || 250;
+  const rad = gdef.smashR || 3;
+  const mjol = (q.local ? equippedWskin('hammer') : q.wskin) === 'mjolnir';
+  paintGrenades(x, y, z, q.team, isHost(), 2);
+  if (isHost() && authDmg) {
+    for (const o of players.values()) {
+      if (o.team === q.team || !o.alive || spawnImmune(o) || o.id === q.id) continue;
+      const d = Math.hypot(o.x - x, (o.y + 0.4) - y, o.z - z);
+      if (d < rad + 0.45) {
+        damage(o, dmg * (1 - 0.35 * d / (rad + 0.45)), q.team, q.id, 'hammer');
+        const nx = (o.x - x) / (d || 1), nz = (o.z - z) / (d || 1);
+        o.vx += nx * 14; o.vz += nz * 14; o.vy += 8; o.onGround = false;
+      }
+    }
+  }
+  hammerDust(x, y, z, true);
+  burst(x, y + 0.3, z, 36, TEAMS[q.team].css, 9, { life: 0.55, size: 1.2 });
+  ring(x, y, z, q.team, rad);
+  if (mjol) mjolnirLightningStrike(x, y, z);
+  else sfx('explode');
+  if (q.local) { gun.hammerAnim = 1.2; gun.autoCd = gdef.rate || 1; gun.recoil = 1.4; }
+}
+function startHammerLeap(q, tx, ty, tz) {
+  if (!q || !q.alive) return;
+  // Hard clamp landing inside the map walkable area
+  const ix = Math.max(1, Math.min(X - 2, Math.floor(tx)));
+  const iz = Math.max(1, Math.min(Z - 2, Math.floor(tz)));
+  let top = -1;
+  for (let yy = Y - 1; yy >= 0; yy--) if (solidAt(ix, yy, iz)) { top = yy; break; }
+  if (top < 0) return false;
+  tx = ix + 0.5; tz = iz + 0.5; ty = top + 1;
+  const startX = q.x, startY = q.y, startZ = q.z;
+  const apexY = Math.max(startY, ty) + 10;
+  const leap = { t: 0, dur: 1.35, sx: startX, sy: startY, sz: startZ, tx, ty, tz, apexY };
+  if (q.local) {
+    gun.hammerLeap = leap;
+    gun.charging = false;
+    gun.charge = 0;
+    gun.hammerMark = null;
+    hideHammerGraph();
+    gun.hammerAnim = 0.55;
+    sfx('jump');
+    toast('HAMMER SMASH');
+  }
+  q.hammerLeap = leap;
+  q.vx = q.vy = q.vz = 0;
+  q.onGround = false;
+  send({ t: 'hammerLeap', id: q.id, team: q.team, from: [r2(startX), r2(startY), r2(startZ)], to: [r2(tx), r2(ty), r2(tz)], apex: r2(apexY), dur: 1.35 });
+  return true;
+}
+function beginHammerLeapAt(q, from, to, apex, dur) {
+  if (!q) return;
+  const leap = {
+    t: 0, dur: dur || 1.35,
+    sx: from[0], sy: from[1], sz: from[2],
+    tx: to[0], ty: to[1], tz: to[2],
+    apexY: apex != null ? apex : (Math.max(from[1], to[1]) + 10),
+  };
+  q.hammerLeap = leap;
+  q.x = leap.sx; q.y = leap.sy; q.z = leap.sz;
+  q.vx = q.vy = q.vz = 0;
+  q.onGround = false;
+  if (q.local) gun.hammerLeap = leap;
+}
+function tickHammerLeap(q, dt) {
+  const L = q.hammerLeap;
+  if (!L) return;
+  L.t += dt;
+  const u = Math.min(1, L.t / L.dur);
+  // double smoothstep — soft lift, floaty apex, soft land
+  const e = u * u * (3 - 2 * u);
+  const ease = e * e * (3 - 2 * e);
+  const mx = (L.sx + L.tx) * 0.5, mz = (L.sz + L.tz) * 0.5, my = L.apexY;
+  const omt = 1 - ease;
+  q.x = omt * omt * L.sx + 2 * omt * ease * mx + ease * ease * L.tx;
+  q.y = omt * omt * L.sy + 2 * omt * ease * my + ease * ease * L.ty;
+  q.z = omt * omt * L.sz + 2 * omt * ease * mz + ease * ease * L.tz;
+  q.vx = q.vy = q.vz = 0;
+  q.onGround = false;
+  if (q.local) gun.hammerLeap = L;
+  if (u >= 1) {
+    q.x = L.tx; q.y = L.ty; q.z = L.tz;
+    q.hammerLeap = null;
+    if (q.local) gun.hammerLeap = null;
+    if (q.local || (isHost() && q.npc)) {
+      hammerSmashLand(q, L.tx, L.ty, L.tz, true);
+      const skin = (q.local ? equippedWskin('hammer') : q.wskin) || '';
+      send({ t: 'hammerSmash', id: q.id, team: q.team, p: [r2(L.tx), r2(L.ty), r2(L.tz)], skin });
+    }
+    // peers wait for hammerSmash for the boom VFX
+  }
+}
+function releaseHammer() {
+  if (!me || !me.alive || phase !== 'play') { gun.charging = false; gun.charge = 0; gun.hammerMark = null; hideHammerGraph(); return; }
+  if (equippedGun(me).id !== 'hammer') { gun.charging = false; gun.charge = 0; hideHammerGraph(); return; }
+  if (gun.hammerLeap) { gun.charging = false; gun.charge = 0; hideHammerGraph(); return; }
+  const held = gun.charge;
+  const need = equippedGun(me).charge || 3;
+  gun.charging = false;
+  gun.charge = 0;
+  const mark = gun.hammerMark;
+  gun.hammerMark = null;
+  hideHammerGraph();
+  if (gun.autoCd > 0) return;
+  if (held >= need) {
+    const [dx, dy, dz] = aimDir();
+    const pt = mark || hammerAimPoint(me, dx, dy, dz);
+    if (pt && startHammerLeap(me, pt.x, pt.y, pt.z)) return;
+    toast('AIM AT THE GROUND');
+    fireHammerSlap(me);
+  } else {
+    fireHammerSlap(me);
+  }
+}
+function clearTazeBolts() {
+  if (gun.tazeBolts) {
+    for (const m of gun.tazeBolts) scene.remove(m);
+    gun.tazeBolts = null;
+  }
+}
+function freeTazeVictims(ownerId) {
+  for (const o of players.values()) {
+    if (o.tazed && o.tazed.by === ownerId) o.tazed = null;
+  }
+  if (me && gun.tazeCaught) gun.tazeCaught = [];
+}
+function tazeTip(q, dx, dy, dz) {
+  return {
+    x: q.x + dx * 0.55,
+    y: q.y + EYE * 0.7 + dy * 0.2,
+    z: q.z + dz * 0.55,
+  };
+}
+function ensureTazeBoltLine() {
+  if (gun.tazeBolts && gun.tazeBolts.length) return gun.tazeBolts;
+  // ~2× original thin bolts: 3 jagged lines + slim twin offset for thickness
+  const mats = [
+    new THREE.LineBasicMaterial({ color: '#7ef6ff', transparent: true, opacity: 0.95 }),
+    new THREE.LineBasicMaterial({ color: '#fff6a0', transparent: true, opacity: 0.85 }),
+    new THREE.LineBasicMaterial({ color: '#3ad7ff', transparent: true, opacity: 0.75 }),
+    new THREE.LineBasicMaterial({ color: '#7ef6ff', transparent: true, opacity: 0.7 }),
+    new THREE.LineBasicMaterial({ color: '#fff6a0', transparent: true, opacity: 0.65 }),
+    new THREE.LineBasicMaterial({ color: '#3ad7ff', transparent: true, opacity: 0.55 }),
+  ];
+  gun.tazeBolts = mats.map(mat => {
+    const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()]);
+    const line = new THREE.Line(geo, mat);
+    line.frustumCulled = false;
+    scene.add(line);
+    return line;
+  });
+  return gun.tazeBolts;
+}
+function updateTazeBoltVfx(q, dx, dy, dz, range, caught) {
+  const lines = ensureTazeBoltLine();
+  const tip = tazeTip(q, dx, dy, dz);
+  const end = { x: tip.x + dx * range, y: tip.y + dy * range, z: tip.z + dz * range };
+  const targets = caught.length ? caught.map(id => players.get(id)).filter(o => o && o.alive) : [null];
+  const magnet = (q.local ? equippedWskin('tazer') : q.wskin) === 'magnet';
+  // original jitter was ~0.22 — 2× = 0.44
+  const jAmt = gun.tazeOn ? (magnet ? 0.28 : 0.44) : 0.16;
+  const cols = magnet
+    ? ['#ff3b3b', '#c5ccd6', '#ff6b6b', '#9ad0ff', '#ffd21f', '#e03131']
+    : ['#7ef6ff', '#fff6a0', '#3ad7ff', '#7ef6ff', '#fff6a0', '#3ad7ff'];
+  lines.forEach((line, li) => {
+    if (line.material && line.material.color) line.material.color.set(cols[li % cols.length]);
+    const o = targets[li % Math.max(1, targets.length)];
+    const ex = o ? o.x : end.x, ey = o ? o.y + 0.45 : end.y, ez = o ? o.z : end.z;
+    // slight twin offset so the bolt reads ~2× thicker than a single line
+    const twin = (li >= 3) ? 0.04 : 0;
+    const pts = [];
+    const segs = magnet ? 7 : 5;
+    for (let i = 0; i <= segs; i++) {
+      const u = i / segs;
+      // Magnet: spiral pull path instead of jagged lightning
+      const spin = magnet ? Math.sin(u * Math.PI * 3 + li + performance.now() * 0.01) * (0.18 * (1 - u)) : 0;
+      const jx = (i && i < segs) ? (Math.random() - 0.5) * jAmt + spin : spin;
+      const jy = (i && i < segs) ? (Math.random() - 0.5) * jAmt : 0;
+      const jz = (i && i < segs) ? (Math.random() - 0.5) * jAmt + spin * 0.6 : 0;
+      pts.push(new THREE.Vector3(
+        tip.x + (ex - tip.x) * u + jx + twin,
+        tip.y + (ey - tip.y) * u + jy,
+        tip.z + (ez - tip.z) * u + jz + twin * 0.5
+      ));
+    }
+    line.geometry.setFromPoints(pts);
+    line.visible = true;
+  });
+}
+function catchTazeTargets(q, dx, dy, dz, range) {
+  const tip = tazeTip(q, dx, dy, dz);
+  const got = [];
+  for (const o of players.values()) {
+    if (o.team === q.team || !o.alive || spawnImmune(o) || o.id === q.id || o.tazeFling) continue;
+    if (o.tazed && o.tazed.by !== q.id) continue;
+    const vx = o.x - tip.x, vy = (o.y + 0.4) - tip.y, vz = o.z - tip.z;
+    const dist = Math.hypot(vx, vy, vz);
+    if (dist > range + 0.55) continue;
+    const along = vx * dx + vy * dy + vz * dz;
+    if (along < -0.15 || along > range + 0.4) continue;
+    const lat = Math.sqrt(Math.max(0, dist * dist - along * along));
+    if (lat > 0.85) continue;
+    got.push(o);
+  }
+  return got;
+}
+function pinTazeVictim(owner, o, dx, dy, dz) {
+  const hold = 1.35;
+  o.x = owner.x + dx * hold;
+  o.y = owner.y + 0.35 + Math.max(0, dy) * 0.4;
+  o.z = owner.z + dz * hold;
+  o.vx = o.vy = o.vz = 0;
+  o.onGround = false;
+  o.tazed = { by: owner.id, team: owner.team };
+}
+function startTazeBolts(q) {
+  gun.tazeOn = true;
+  if (!gun.tazeCaught) gun.tazeCaught = [];
+  sfx('laser_beam');
+  toast((q.local ? equippedWskin('tazer') : q.wskin) === 'magnet' ? 'MAGNET LIVE' : 'TAZER LIVE');
+  send({ t: 'tazeOn', id: q.id, team: q.team, skin: (q.local ? equippedWskin('tazer') : q.wskin) || '' });
+}
+function tickTazeHold(q, dt) {
+  if (!q || !q.alive || !gun.tazeOn) return;
+  const gdef = equippedGun(q);
+  const range = gdef.melee || 2;
+  const magnet = (q.local ? equippedWskin('tazer') : q.wskin) === 'magnet';
+  let dx, dy, dz;
+  if (q.local) [dx, dy, dz] = aimDir();
+  else { const cp = Math.cos(q.pitch || 0); dx = -Math.sin(q.yaw) * cp; dy = Math.sin(q.pitch || 0); dz = -Math.cos(q.yaw) * cp; }
+  const hits = catchTazeTargets(q, dx, dy, dz, range);
+  const ids = [];
+  const tip = tazeTip(q, dx, dy, dz);
+  for (const o of hits) {
+    pinTazeVictim(q, o, dx, dy, dz);
+    ids.push(o.id);
+    if (magnet) magnetSuckFx(tip, { x: o.x, y: o.y + 0.45, z: o.z }, dt);
+    else if (Math.random() < dt * 10) burst(o.x, o.y + 0.5, o.z, 3, '#7ef6ff', 3.2, { life: 0.22, size: 0.5, up: 0.5 });
+  }
+  // Keep previously caught if still alive even if aim drifts slightly
+  for (const id of (gun.tazeCaught || [])) {
+    if (ids.includes(id)) continue;
+    const o = players.get(id);
+    if (o && o.alive && o.tazed && o.tazed.by === q.id) {
+      pinTazeVictim(q, o, dx, dy, dz);
+      ids.push(id);
+      if (magnet) magnetSuckFx(tip, { x: o.x, y: o.y + 0.45, z: o.z }, dt);
+    }
+  }
+  gun.tazeCaught = ids;
+  updateTazeBoltVfx(q, dx, dy, dz, range, ids);
+  if (Math.random() < dt * 22) {
+    if (magnet) {
+      burst(tip.x + dx * range * 0.4, tip.y, tip.z + dz * range * 0.4, 3, Math.random() < 0.5 ? '#ff3b3b' : '#c5ccd6', 3.2, { life: 0.22, size: 0.4, up: 0.15 });
+      if (ids.length) energyRing(tip.x + dx * 0.6, tip.y, tip.z + dz * 0.6, '#ff6b6b', 0.55 + Math.random() * 0.35, 0.28);
+    } else {
+      burst(tip.x + dx * range * 0.5, tip.y + dy * range * 0.5, tip.z + dz * range * 0.5, 2, Math.random() < 0.5 ? '#7ef6ff' : '#fff6a0', 3.8, { life: 0.2, size: 0.45, up: 0.25 });
+    }
+  }
+  if (q.local) {
+    const key = ids.slice().sort().join(',');
+    if (ids.length && (key !== gun.tazeCatchKey || Math.random() < dt * 6)) {
+      gun.tazeCatchKey = key;
+      send({ t: 'tazeCatch', id: q.id, team: q.team, ids, d: [r2(dx), r2(dy), r2(dz)] });
+    } else if (!ids.length) gun.tazeCatchKey = '';
+  }
+}
+function beginTazeFling(o, dx, dy, dz, team, ownerId, pos) {
+  if (!o || !o.alive) return;
+  o.tazed = null;
+  o.tazeBoomDone = false;
+  if (pos) { o.x = pos[0]; o.y = pos[1]; o.z = pos[2]; }
+  o.tazeFling = {
+    t: 0, dur: 0.75,
+    vx: dx * 26, vy: dy * 26 + 5, vz: dz * 26,
+    team: team != null ? team : 0,
+    ownerId: ownerId || '',
+    impactSent: false,
+  };
+  o.vx = o.tazeFling.vx; o.vy = o.tazeFling.vy; o.vz = o.tazeFling.vz;
+  o.onGround = false;
+  o.tgt = { x: o.x, y: o.y, z: o.z, yaw: o.yaw, pitch: o.pitch || 0 };
+}
+function tazeExplodeVictim(o, auth, at) {
+  if (!o || o.tazeBoomDone) return;
+  o.tazeBoomDone = true;
+  const fling = o.tazeFling;
+  // team 0 is valid (survival humans) — never use || here or damage becomes friendly-fire
+  const team = fling && fling.team != null ? fling.team : (at && at.team != null ? at.team : o.team);
+  const byId = (fling && fling.ownerId) || (at && at.by) || '';
+  if (at && at.x != null) { o.x = at.x; o.y = at.y; o.z = at.z; }
+  const x = o.x, y = o.y + 0.35, z = o.z;
+  const flingDmg = (at && at.dmg) || gunById('tazer').flingDmg || 100;
+  o.tazeFling = null;
+  o.tazed = null;
+  // Exploder-sized paint boom; the thrown target itself takes a flat 100
+  explodeAt(x, y, z, team, auth, EXPLODER_R, 0, { byId, weapon: 'tazer', inkBoom: true });
+  if (auth && o.alive) {
+    // Bypass spawn-guard so the impact always lands the promised fling damage
+    const guard = o.guardUntil;
+    o.guardUntil = 0;
+    damage(o, flingDmg, team, byId, 'tazer');
+    if (o.alive && guard) o.guardUntil = guard;
+    queueVitals(o);
+  }
+  if (auth) send({ t: 'tazeBoom', team, x: r2(x), y: r2(y), z: r2(z), by: byId, vid: o.id, dmg: flingDmg });
+}
+function tickTazeFling(o, dt) {
+  const F = o.tazeFling;
+  if (!F) return;
+  F.t += dt;
+  o.vx = F.vx; o.vy = F.vy; o.vz = F.vz;
+  o.x += o.vx * dt; o.y += o.vy * dt; o.z += o.vz * dt;
+  o.onGround = false;
+  F.vy -= G * 0.55 * dt;
+  o.vy = F.vy;
+  if (Math.random() < dt * 28) burst(o.x, o.y + 0.4, o.z, 3, '#7ef6ff', 4, { life: 0.25, size: 0.45, up: 0.8 });
+  const ix = Math.floor(o.x), iy = Math.floor(o.y + 0.2), iz = Math.floor(o.z);
+  const hit = solidAt(ix, iy, iz) || solidAt(ix, iy - 1, iz) || o.y < -2 || F.t >= F.dur;
+  if (!hit) return;
+  if (isHost()) {
+    tazeExplodeVictim(o, true);
+    return;
+  }
+  // Clients report impact so host can auth damage (host sim start pos often desyncs)
+  if (!F.impactSent) {
+    F.impactSent = true;
+    send({
+      t: 'tazeImpact', vid: o.id,
+      x: r2(o.x), y: r2(o.y), z: r2(o.z),
+      team: F.team, by: F.ownerId || '',
+      dmg: gunById('tazer').flingDmg || 100,
+    });
+  }
+  o.tazeFling = null;
+  o.tazed = null;
+}
+function releaseTazer() {
+  if (!me || !me.alive || phase !== 'play') {
+    gun.charging = false; gun.charge = 0; gun.tazeOn = false; clearTazeBolts(); freeTazeVictims(me && me.id); return;
+  }
+  if (equippedGun(me).id !== 'tazer') { gun.charging = false; gun.charge = 0; return; }
+  const held = gun.charge;
+  const need = equippedGun(me).charge || 1;
+  const wasOn = gun.tazeOn;
+  const caught = (gun.tazeCaught || []).slice();
+  gun.charging = false;
+  gun.charge = 0;
+  gun.tazeOn = false;
+  clearTazeBolts();
+  if (gun.autoCd > 0 && !wasOn) return;
+  const [dx, dy, dz] = aimDir();
+  if (wasOn) {
+    const posMap = [];
+    for (const id of caught) {
+      const o = players.get(id);
+      if (!o || !o.alive) continue;
+      beginTazeFling(o, dx, dy, dz, me.team, me.id);
+      posMap.push([id, r2(o.x), r2(o.y), r2(o.z)]);
+    }
+    gun.tazeCaught = [];
+    gun.tazeCatchKey = '';
+    gun.autoCd = equippedGun(me).rate || 1.2;
+    gun.recoil = 1.1;
+    sfx('shoot');
+    send({ t: 'tazeRelease', id: me.id, team: me.team, d: [r2(dx), r2(dy), r2(dz)], ids: caught, pos: posMap });
+    if (!caught.length) toast('NO CATCH');
+  } else if (held < need) {
+    // short tap: tiny zap poke in 2-block range
+    const range = equippedGun(me).melee || 2;
+    const tip = tazeTip(me, dx, dy, dz);
+    burst(tip.x + dx * range * 0.6, tip.y, tip.z + dz * range * 0.6, 10, '#7ef6ff', 4, { life: 0.25 });
+    if (isHost()) {
+      for (const o of catchTazeTargets(me, dx, dy, dz, range)) {
+        damage(o, equippedGun(me).dmg || 15, me.team, me.id, 'tazer');
+        o.vx += dx * 4; o.vz += dz * 4; o.vy += 2;
+      }
+    }
+    gun.autoCd = 0.35;
+    gun.recoil = 0.4;
+    sfx('hit');
+    send({ t: 'tazeZap', id: me.id, team: me.team, d: [r2(dx), r2(dy), r2(dz)], r: range, dmg: equippedGun(me).dmg || 15 });
+  }
+}
+function fireSpear(q) {
+  const gdef = equippedGun(q);
+  const range = gdef.melee || 5.2;
+  const dmg = spearSpeedDmg(q, gdef.dmg || 50);
+  let dx, dy, dz;
+  if (q.local) [dx, dy, dz] = aimDir();
+  else { const cp = Math.cos(q.pitch || 0); dx = -Math.sin(q.yaw) * cp; dy = Math.sin(q.pitch || 0); dz = -Math.cos(q.yaw) * cp; }
+  const ox = q.x + dx * 0.45, oy = q.y + EYE * 0.85, oz = q.z + dz * 0.45;
+  for (let i = 1; i <= 5; i++) {
+    const t = i / 5;
+    const x = ox + dx * range * t, y = oy + dy * range * t, z = oz + dz * range * t;
+    if (mapMode === 'splat') { if (i % 2 === 0) splatBurst(x, y, z, 0.9, q.team, isHost()); }
+    else forSphere(x, y, z, 0.85, ii => isHost() ? hostPaint(ii, q.team) : setPaint(ii, q.team));
+  }
+  if (isHost()) {
+    for (const o of players.values()) {
+      if (o.team === q.team || !o.alive || spawnImmune(o) || o.id === q.id) continue;
+      const vx = o.x - q.x, vy = (o.y + 0.4) - (q.y + EYE * 0.7), vz = o.z - q.z;
+      const dist = Math.hypot(vx, vy, vz);
+      if (dist > range + 0.45) continue;
+      const dot = (vx * dx + vy * dy + vz * dz) / (dist || 1);
+      if (dot < 0.55) continue;
+      damage(o, dmg, q.team, q.id, 'spear');
+      o.vx += dx * 7; o.vz += dz * 7; o.vy += 2.5;
+    }
+  }
+  burst(ox + dx * 1.6, oy + dy * 1.2, oz + dz * 1.6, 14, TEAMS[q.team].css, 5, { life: 0.28, size: 0.7 });
+  send({ t: 'spear', id: q.id, team: q.team, o: [r2(ox), r2(oy), r2(oz)], d: [r2(dx), r2(dy), r2(dz)], r: range, dmg });
+  if (q.local) { gun.spearAnim = 1; sfx('shoot_gauntlet'); }
+}
+function shurikenBurstCount(held) {
+  if (held < 0.3) return 1;
+  const tier = Math.floor(held / 0.3); // 1 @0.3, 2 @0.6, 3 @0.9...
+  return Math.min(16, Math.pow(2, tier));
+}
+function fireOneShuriken(q) {
+  const gdef = equippedGun(q);
+  let dx, dy, dz;
+  if (q.local) [dx, dy, dz] = aimDir();
+  else { const cp = Math.cos(q.pitch || 0); dx = -Math.sin(q.yaw) * cp; dy = Math.sin(q.pitch || 0); dz = -Math.cos(q.yaw) * cp; }
+  const sp = 0.035;
+  dx += (Math.random() - 0.5) * sp; dy += (Math.random() - 0.5) * sp; dz += (Math.random() - 0.5) * sp;
+  const n = Math.hypot(dx, dy, dz) || 1;
+  const paper = (q.local ? equippedWskin('shuriken') : q.wskin) === 'papershuri';
+  fireShot(q, dx / n, dy / n, dz / n, gdef.dmg || 30, 'shot', { look: paper ? 'papershuri' : 'shuriken', sfx: 'shoot', paintR: BOMB_R * 0.5 });
+}
+function queueShurikenBurst(n) {
+  if (!me || n <= 0 || gun.ammo <= 0) return;
+  gun.shuriBurst = Math.min(n, gun.ammo);
+  gun.shuriGap = 0;
+}
+function tickShurikenBurst(dt) {
+  if (!me || gun.shuriBurst <= 0) return;
+  gun.shuriGap -= dt;
+  if (gun.shuriGap > 0) return;
+  if (!me.alive || gun.ammo <= 0 || gun.reload > 0) { gun.shuriBurst = 0; return; }
+  gun.ammo--;
+  gun.shuriBurst--;
+  gun.recoil = 0.45;
+  fireOneShuriken(me);
+  gun.shuriGap = 0.048;
+  if (gun.shuriBurst <= 0) gun.autoCd = gun.shuriHeld ? 0.11 : (equippedGun(me).rate || 0.22);
+}
+function releaseShuriken() {
+  if (!me || !me.alive || phase !== 'play') { gun.charging = false; gun.charge = 0; gun.shuriHeld = false; return; }
+  if (equippedGun(me).id !== 'shuriken') { gun.charging = false; gun.charge = 0; return; }
+  const held = gun.charge;
+  gun.charging = false;
+  gun.charge = 0;
+  gun.shuriHeld = false;
+  // Tap / short hold: single throw (continuous fire already handled while holding)
+  if (held < 0.3 && gun.shuriBurst <= 0 && gun.autoCd <= 0 && gun.reload <= 0) {
+    if (gun.ammo <= 0) { toast('Out of shurikens! Press R to reload'); return; }
+    gun.ammo--;
+    gun.recoil = 0.55;
+    gun.autoCd = equippedGun(me).rate || 0.22;
+    fireOneShuriken(me);
+  }
 }
 
 /** Paintbrush slap — melee, 20 dmg (5-shot to kill at 100 HP). */
@@ -6858,7 +8346,22 @@ function spawnImmune(q) { return !!(q && q.guardUntil && gameTime < q.guardUntil
 function damage(q, dmg, byTeam, byId, weapon) {
   if (!isHost() || !q || !q.alive || q.shieldT > 0 || spawnImmune(q) || q.team === byTeam) return;
   if (adminOn() && adminState.god && q.local) return;
-  q.hp = Math.max(0, q.hp - dmg); q.lastHit = gameTime;
+  // Resolve max badges live (INVINCIBLE / ONE-PUNCH are real combat effects)
+  const vic = personalStats(q);
+  if (vic.invincible || q.invincible) return;
+  let hit = dmg;
+  if (byId) {
+    const atk = players.get(byId);
+    if (atk) {
+      const ap = personalStats(atk);
+      if (ap.onePunch || atk.onePunch) hit = Math.max(hit, (q.maxHp || MAX_HP) + 999);
+      else {
+        const bonus = ap.dmgBonus || atk.dmgBonus || 0;
+        if (bonus) hit += bonus;
+      }
+    }
+  }
+  q.hp = Math.max(0, q.hp - hit); q.lastHit = gameTime;
   if (byId) { q.lastHitBy = byId; q.lastWeapon = weapon || ''; }
   if (q.local) sfx('hurt'); else sfx('hit');
   if (q.hp <= 0) knockOut(q);
@@ -6869,7 +8372,8 @@ function knockOut(q) {
   q.hp = 0;
   q.alive = false; q.respawnT = RESPAWN_TIME; q.item = null; q.dash = 0;
   q.lassoN = 0; q.lassoSlam = null;
-  if (q.local) gun.lassoAnim = 0;
+  q.tazed = null; q.tazeFling = null; q.tazeBoomDone = false;
+  if (q.local) { gun.lassoAnim = 0; if (gun.tazeOn) { gun.tazeOn = false; clearTazeBolts(); freeTazeVictims(q.id); } }
   burst(q.x, q.y + 0.4, q.z, 45, skinById(q.skin).color, 9, { life: 0.75, size: 1.15 });
   const credit = creditKill(q);
   send({ t: 'ko', id: q.id, kn: credit.kn, kt: credit.kt, vn: credit.vn, vt: credit.vt, w: credit.w || '' });
@@ -7026,7 +8530,7 @@ function updateProjectiles(dt) {
         dead = true;
       }
     }
-    if (p.mesh && !dead && (p.look === 'zap' || p.look === 'fire' || p.look === 'beam' || p.look === 'wind' || p.look === 'star' || p.look === 'balloon' || p.look === 'paper' || p.look === 'needle' || p.look === 'dragon' || p.look === 'water' || p.look === 'cannonball' || p.kind === 'arrow' || p.kind === 'bolt' || p.kind === 'rocket' || p.kind === 'hook' || p.kind === 'plasma')) {
+    if (p.mesh && !dead && (p.look === 'zap' || p.look === 'fire' || p.look === 'beam' || p.look === 'wind' || p.look === 'star' || p.look === 'balloon' || p.look === 'paper' || p.look === 'needle' || p.look === 'dragon' || p.look === 'water' || p.look === 'cannonball' || p.look === 'shuriken' || p.look === 'papershuri' || p.kind === 'arrow' || p.kind === 'bolt' || p.kind === 'rocket' || p.kind === 'hook' || p.kind === 'plasma')) {
       p.mesh.lookAt(p.x + p.vx, p.y + p.vy, p.z + p.vz);
       if (p.kind === 'plasma') p.mesh.rotation.z += dt * 4;
       if (p.look === 'star') p.mesh.rotateZ((p.spin = (p.spin || 0) + dt * 5));
@@ -7037,6 +8541,7 @@ function updateProjectiles(dt) {
     if (!dead && p.look === 'star' && Math.random() < 0.72) burst(p.x, p.y, p.z, 5, Math.random() < 0.45 ? '#fff6d0' : '#ffe27a', 2.6, { life: 0.32, size: 0.62, up: 0.7 });
     if (!dead && p.look === 'paper' && Math.random() < 0.45) sparkTrail(p.x, p.y, p.z, '#f4ecdc', 1);
     if (!dead && p.look === 'dragon' && Math.random() < 0.7) sparkTrail(p.x, p.y, p.z, Math.random() < 0.5 ? '#ff4a00' : '#ff2d55', 2);
+    if (!dead && (p.look === 'shuriken' || p.look === 'papershuri') && p.mesh) p.mesh.rotation.z += dt * 28;
     if (!dead && p.look === 'water' && Math.random() < 0.75) sparkTrail(p.x, p.y, p.z, Math.random() < 0.5 ? '#4fc3f7' : '#b3e5fc', 2);
     if (!dead && p.look === 'cannonball' && Math.random() < 0.45) sparkTrail(p.x, p.y, p.z, '#5a5e66', 1);
     if (!dead && p.look === 'needle' && Math.random() < 0.4) sparkTrail(p.x, p.y, p.z, '#f4f1e4', 1);
@@ -7055,6 +8560,10 @@ function updateProjectiles(dt) {
       if (p.look === 'paper') {
         burst(p.x, p.y, p.z, 10, '#f4ecdc', 3, { life: 0.35, size: 0.35, up: 0.4 });
         burst(p.x, p.y, p.z, 6, '#c48a4a', 2, { life: 0.28, size: 0.25, up: 0.2 });
+      }
+      if (p.look === 'papershuri') {
+        burst(p.x, p.y, p.z, 8, '#2dd4bf', 3, { life: 0.32, size: 0.3, up: 0.35 });
+        burst(p.x, p.y, p.z, 6, '#f7fafc', 2, { life: 0.28, size: 0.25, up: 0.2 });
       }
       if (p.look === 'star') {
         burst(p.x, p.y, p.z, 16, '#ffe27a', 5, { life: 0.42, size: 0.7, up: 1.1 });
@@ -7173,6 +8682,8 @@ function pickNpcTarget(q) {
 }
 function npcUpdate(q, dt) {
   if (q.boulderRide) { q.bombCd -= dt; return; }
+  if (q.hammerLeap) { q.bombCd -= dt; return; }
+  if (q.tazed || q.tazeFling) { q.bombCd -= dt; return; }
   const diff = q.zombie ? (q.zDiff || 0) : npcDiff();
   const aim = (q.aimRank && NPC_AIM[q.aimRank]) ? NPC_AIM[q.aimRank] : npcAim();
   const a = q.ai;
@@ -7243,11 +8754,41 @@ function npcUpdate(q, dt) {
         q.fireCd = 0.45;
       } else if (gdef.id === 'canon') {
         fireCanon(q); q.fireCd = 1;
-      } else if (gdef.id === 'lasso') {
+      }       else if (gdef.id === 'lasso') {
         useLasso(q, ddx / l, ddy / l, ddz / l);
         q.fireCd = 0.34;
+      } else if (gdef.id === 'spear') {
+        fireSpear(q); q.fireCd = fireRate;
+      } else if (gdef.id === 'shuriken') {
+        const n = willHit ? 2 : 1;
+        for (let i = 0; i < n && (q._shAmmo = (q._shAmmo == null ? (gdef.ammo || 10) : q._shAmmo)) > 0; i++) {
+          q._shAmmo--;
+          fireOneShuriken(q);
+        }
+        q.fireCd = 0.28;
+      } else if (gdef.id === 'hammer') {
+        if (!q.hammerLeap) {
+          if (willHit && fd < 9 && Math.random() < 0.28) {
+            const pt = { x: foe.x, y: foe.y, z: foe.z };
+            startHammerLeap(q, pt.x, pt.y, pt.z);
+            q.fireCd = 2.2;
+          } else {
+            fireHammerSlap(q);
+            q.fireCd = fireRate;
+          }
+        }
+      } else if (gdef.id === 'tazer') {
+        // NPCs: quick zap poke at close range
+        if (fd < (gdef.melee || 2) + 0.6 && willHit) {
+          const [tdx, tdy, tdz] = [ddx / l, ddy / l, ddz / l];
+          for (const o of catchTazeTargets(q, tdx, tdy, tdz, gdef.melee || 2)) {
+            damage(o, gdef.dmg || 15, q.team, q.id, 'tazer');
+          }
+          burst(q.x + tdx, q.y + EYE * 0.7, q.z + tdz, 8, '#7ef6ff', 3.5, { life: 0.22 });
+          q.fireCd = fireRate;
+        } else q.fireCd = 0.4;
       }
-      if (gdef.id !== 'gauntlet' && gdef.id !== 'paintbrush' && gdef.id !== 'laser' && gdef.id !== 'crossbow' && gdef.id !== 'shotgun' && gdef.id !== 'spray' && gdef.id !== 'canon' && gdef.id !== 'lasso') {
+      if (gdef.id !== 'gauntlet' && gdef.id !== 'paintbrush' && gdef.id !== 'laser' && gdef.id !== 'crossbow' && gdef.id !== 'shotgun' && gdef.id !== 'spray' && gdef.id !== 'canon' && gdef.id !== 'lasso' && gdef.id !== 'spear' && gdef.id !== 'shuriken' && gdef.id !== 'hammer' && gdef.id !== 'tazer') {
         fireShot(q, ddx / l, ddy / l, ddz / l, gdef.id === 'sniper' && willHit ? (gdef.scopeDmg || 100) : dmg, kind, { trail: gdef.id === 'sniper' && willHit });
         q.fireCd = fireRate;
       }
@@ -7341,6 +8882,22 @@ $('gl').addEventListener('mousedown', e => {
       gun.charging = true; gun.charge = 0;
       return;
     }
+    if (gid === 'shuriken') {
+      if (gun.reload > 0 || gun.autoCd > 0) return;
+      if (gun.ammo <= 0) { toast('Out of shurikens! Press R to reload'); return; }
+      gun.charging = true; gun.charge = 0; gun.shuriHeld = false;
+      return;
+    }
+    if (gid === 'hammer') {
+      if (gun.autoCd > 0 || gun.hammerLeap || me.hammerLeap) return;
+      gun.charging = true; gun.charge = 0; gun.hammerMark = null;
+      return;
+    }
+    if (gid === 'tazer') {
+      if (gun.autoCd > 0 || me.tazed || me.tazeFling) return;
+      gun.charging = true; gun.charge = 0; gun.tazeOn = false; gun.tazeCaught = [];
+      return;
+    }
     if (gid === 'bow' || gid === 'sniper' || gid === 'paintbrush' || gid === 'laser') {
       if (gid === 'laser' && (gun.laserCd > 0 || gun.laserBeam)) return;
       gun.charging = true; gun.charge = 0;
@@ -7352,17 +8909,20 @@ addEventListener('mouseup', e => {
   if (e.button !== 0 || isMobile) return;
   if (mouseDown && me) {
     const id = equippedGun(me).id;
-    if (gun.charging) {
+    if (gun.charging || gun.tazeOn) {
       if (id === 'bow') releaseBow();
       else if (id === 'sniper') releaseSniper();
       else if (id === 'paintbrush') releasePaintbrush();
       else if (id === 'laser') releaseLaser();
       else if (id === 'crossbow') releaseCrossbow();
       else if (id === 'canon') releaseCanon();
+      else if (id === 'shuriken') releaseShuriken();
+      else if (id === 'hammer') releaseHammer();
+      else if (id === 'tazer') releaseTazer();
     }
   }
   mouseDown = false;
-  if (!(gun.laserBeam && equippedGun(me)?.id === 'laser')) {
+  if (!(gun.laserBeam && equippedGun(me)?.id === 'laser') && equippedGun(me)?.id !== 'shuriken' && equippedGun(me)?.id !== 'hammer' && equippedGun(me)?.id !== 'tazer') {
     gun.charging = false;
     if (typeof setScope === 'function') setScope(false);
   }
@@ -7444,13 +9004,29 @@ if (isMobile) {
         gun.charging = true; gun.charge = 0;
         return;
       }
+      if (gid === 'shuriken') {
+        if (gun.reload > 0 || gun.autoCd > 0) return;
+        if (gun.ammo <= 0) { toast('Out of shurikens! Press R to reload'); return; }
+        gun.charging = true; gun.charge = 0; gun.shuriHeld = false;
+        return;
+      }
+      if (gid === 'hammer') {
+        if (gun.autoCd > 0 || gun.hammerLeap || me.hammerLeap) return;
+        gun.charging = true; gun.charge = 0; gun.hammerMark = null;
+        return;
+      }
+      if (gid === 'tazer') {
+        if (gun.autoCd > 0 || me.tazed || me.tazeFling) return;
+        gun.charging = true; gun.charge = 0; gun.tazeOn = false; gun.tazeCaught = [];
+        return;
+      }
       if (gid === 'bow' || gid === 'sniper' || gid === 'paintbrush' || gid === 'laser') {
         if (gid === 'laser' && (gun.laserCd > 0 || gun.laserBeam)) return;
         gun.charging = true; gun.charge = 0;
       } else shootMouse();
     }
   }, () => {
-    if (gun.charging && me) {
+    if ((gun.charging || gun.tazeOn) && me) {
       const id = equippedGun(me).id;
       if (id === 'bow') releaseBow();
       else if (id === 'sniper') releaseSniper();
@@ -7458,9 +9034,12 @@ if (isMobile) {
       else if (id === 'laser') releaseLaser();
       else if (id === 'crossbow') releaseCrossbow();
       else if (id === 'canon') releaseCanon();
+      else if (id === 'shuriken') releaseShuriken();
+      else if (id === 'hammer') releaseHammer();
+      else if (id === 'tazer') releaseTazer();
     }
     mouseDown = false;
-    if (!(gun.laserBeam && equippedGun(me)?.id === 'laser')) {
+    if (!(gun.laserBeam && equippedGun(me)?.id === 'laser') && equippedGun(me)?.id !== 'shuriken' && equippedGun(me)?.id !== 'hammer' && equippedGun(me)?.id !== 'tazer') {
       gun.charging = false;
       if (typeof setScope === 'function') setScope(false);
     }
@@ -7508,7 +9087,7 @@ function lassoRopeMaterial() {
   lassoRopeMaterial.m = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.82, metalness: 0.02 });
   return lassoRopeMaterial.m;
 }
-function lassoStemPoints() {
+function lassoRopePoints() {
   const pts = [];
   const add = (x, y, z = 0) => pts.push(new THREE.Vector3(x, y, z));
   add(0.07, -1.45, 0);
@@ -7524,36 +9103,21 @@ function lassoStemPoints() {
   }
   add(-0.05, 0.06, 0);
   add(0.0, 0.22, 0.03);
-  return pts;
-}
-/** Top loop points relative to the knot pivot (0,0,0). */
-function lassoHoopPoints() {
-  const pts = [];
-  const add = (x, y, z = 0) => pts.push(new THREE.Vector3(x, y, z));
-  add(0.0, 0.02, 0.01);
   for (let i = 0; i <= 56; i++) {
     const t = -Math.PI / 2 + (i / 56) * Math.PI * 2;
-    add(0.98 * Math.cos(t), 0.56 + 0.74 * Math.sin(t) * Math.cos(t), Math.sin(t * 2) * 0.045);
+    add(0.98 * Math.cos(t), 0.78 + 0.74 * Math.sin(t) * Math.cos(t), Math.sin(t * 2) * 0.045);
   }
-  add(0.0, 0.02, 0.01);
+  add(0.0, 0.24, 0.04);
   return pts;
 }
 function makeLassoRopeMesh() {
   const g = new THREE.Group();
-  const mat = lassoRopeMaterial();
-  const stem = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(lassoStemPoints(), false, 'centripetal'), 120, 0.058, 10, false), mat);
-  const knot = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 10), mat);
+  const curve = new THREE.CatmullRomCurve3(lassoRopePoints(), false, 'centripetal');
+  const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 260, 0.058, 10, false), lassoRopeMaterial());
+  const knot = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 10), lassoRopeMaterial());
   knot.position.set(0, 0.22, 0.03);
   knot.scale.set(1.2, 0.85, 1.15);
-  // Only this top loop spins — stem/grip stay put
-  const hoopTop = new THREE.Group();
-  hoopTop.position.set(0, 0.22, 0.03);
-  const hoopTube = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(lassoHoopPoints(), false, 'centripetal'), 140, 0.055, 10, false), mat);
-  hoopTop.add(hoopTube);
-  g.add(stem, knot, hoopTop);
-  g.userData.stem = stem;
-  g.userData.knot = knot;
-  g.userData.hoopTop = hoopTop;
+  g.add(tube, knot);
   return g;
 }
 function hookStringMaterial() {
@@ -7589,15 +9153,16 @@ function makeHookStringMesh(len = 1.15) {
   const pts = [];
   for (let i = 0; i <= 18; i++) {
     const u = i / 18;
-    const wobble = Math.sin(u * Math.PI * 3) * 0.012;
-    pts.push(new THREE.Vector3(wobble, u * len, Math.cos(u * Math.PI * 2.2) * 0.008));
+    // Fade wobble to 0 at both ends so the tip meets the hook eye cleanly
+    const fade = Math.sin(u * Math.PI);
+    const wobble = Math.sin(u * Math.PI * 3) * 0.01 * fade;
+    pts.push(new THREE.Vector3(wobble, u * len, Math.cos(u * Math.PI * 2.2) * 0.006 * fade));
   }
+  // Extra stub into the hook eye so the join never reads as a gap
+  pts.push(new THREE.Vector3(0, len + 0.028, 0));
   const curve = new THREE.CatmullRomCurve3(pts, false, 'centripetal');
-  const strand = new THREE.Mesh(new THREE.TubeGeometry(curve, 48, 0.009, 6, false), mat);
-  const strand2 = new THREE.Mesh(new THREE.TubeGeometry(curve, 48, 0.006, 5, false), mat);
-  strand2.rotation.y = 0.9;
-  strand2.scale.set(1.05, 1, 1.05);
-  g.add(strand, strand2);
+  const strand = new THREE.Mesh(new THREE.TubeGeometry(curve, 56, 0.01, 7, false), mat);
+  g.add(strand);
   g.userData.len = len;
   return g;
 }
@@ -7629,82 +9194,99 @@ function syncLassoHoop(mesh, n, t, thr = 0) {
   const hoop = mesh.userData.hoop;
   const reach = Math.sin(Math.min(1, thr) * Math.PI);
   const isHook = mesh.userData.skin === 'hook' || !!mesh.userData.hook;
-  if (hoop) {
-    if (isHook) {
-      // String stays mostly still; only the hook tip spins / lashes
-      const base = mesh.userData.lineBase || { x: 0.02, y: 0.08, z: 0 };
-      const len = mesh.userData.cordLen || 1.05;
-      const line = mesh.userData.cord || hoop;
-      const tip = mesh.userData.hook;
-      if (line) {
-        line.position.set(base.x, base.y, base.z);
-        line.scale.setScalar(1);
-        // tiny soft flex only — not a full spin
-        line.rotation.set(
-          Math.sin(t * 1.15) * 0.028 - reach * 0.06,
-          Math.sin(t * 0.85) * 0.02,
-          Math.sin(t * 1.05) * 0.025
-        );
-      }
-      if (tip) {
-        const busy = 1 + reach * 2.4 + Math.min(1, Math.sqrt(Math.max(0, n)) * 0.15);
-        const spin = t * (3.6 + reach * 10);
-        tip.rotation.set(
-          Math.sin(t * 3.4) * 0.42 * busy + Math.sin(t * 7.2) * 0.1 - reach * 1.05,
-          spin + Math.sin(t * 2.3) * 0.55,
-          Math.cos(t * 2.8) * 0.38 * busy + reach * 0.7 + Math.sin(t * 5.5) * 0.12
-        );
-        tip.position.set(
-          Math.sin(t * 2.6 + reach) * 0.055 * busy,
-          len + Math.sin(t * 5.2) * 0.03 + Math.sin(t * 9) * 0.01 * busy + reach * 0.05,
-          Math.cos(t * 2.9) * 0.05 * busy - reach * 0.16
-        );
-        tip.scale.setScalar(1 + Math.sin(t * 7.5) * 0.06 + reach * 0.12 + Math.sqrt(Math.max(0, n)) * 0.025);
-      }
-      if (mesh.userData.star) mesh.userData.star.rotation.y = t * 3.5;
-    } else {
-      // Default lasso: animate ONLY the top loop (hoop), stem stays still
-      const busy = 1 + reach * 1.8 + Math.min(1, Math.sqrt(Math.max(0, n)) * 0.12);
-      hoop.position.set(0, 0.22, 0.03);
-      hoop.scale.setScalar((1.02 + Math.sin(t * 5.5) * 0.05 + Math.sqrt(Math.max(0, n)) * 0.035) * (1 + reach * 0.18));
-      hoop.rotation.set(
-        Math.sin(t * 2.8) * 0.55 * busy + Math.sin(t * 6.2) * 0.12 - reach * 1.25,
-        t * (3.8 + reach * 7) + Math.sin(t * 2.1) * 0.45,
-        Math.cos(t * 2.4) * 0.5 * busy + reach * 0.85 + Math.sin(t * 4.8) * 0.15
+  if (isHook) {
+    // Hook skin: tip stays welded to cord end — rotate only, never translate off the string
+    const base = mesh.userData.lineBase || { x: 0.02, y: 0.08, z: 0 };
+    const len = mesh.userData.cordLen || 1.05;
+    const line = mesh.userData.cord || hoop;
+    const tip = mesh.userData.hook;
+    if (line) {
+      line.position.set(base.x, base.y, base.z);
+      line.scale.setScalar(1);
+      line.rotation.set(
+        Math.sin(t * 1.15) * 0.028 - reach * 0.06,
+        Math.sin(t * 0.85) * 0.02,
+        Math.sin(t * 1.05) * 0.025
       );
     }
-  }
-  const bits = mesh.userData.hoopBits;
-  if (!bits) return;
-  const shown = Math.min(n, 14);
-  if (bits.userData.n !== shown || bits.userData.hookStyle !== isHook) {
-    while (bits.children.length) bits.remove(bits.children[0]);
-    const geo = new THREE.BoxGeometry(isHook ? 0.07 : 0.08, isHook ? 0.07 : 0.08, isHook ? 0.07 : 0.08);
-    const cols = ['#f6d56b', '#ff8a3d', '#e07a3a', '#7dffb0', '#ff4fa3'];
-    for (let i = 0; i < shown; i++) {
-      const c = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: cols[i % cols.length], roughness: 0.42 }));
-      if (isHook) {
-        // Sit in the hook crook
+    if (tip) {
+      const busy = 1 + reach * 1.6 + Math.min(1, Math.sqrt(Math.max(0, n)) * 0.12);
+      tip.position.set(0, len, 0);
+      tip.rotation.set(
+        Math.sin(t * 2.8) * 0.22 * busy - reach * 0.55,
+        t * (4.2 + reach * 8) + Math.sin(t * 2.1) * 0.35,
+        Math.cos(t * 2.4) * 0.2 * busy + reach * 0.4
+      );
+      tip.scale.setScalar(1 + Math.sin(t * 6.5) * 0.04 + reach * 0.08);
+    }
+    if (mesh.userData.star) mesh.userData.star.rotation.y = t * 3.5;
+    const bits = mesh.userData.hoopBits;
+    if (!bits) return;
+    const shown = Math.min(n, 14);
+    if (bits.userData.n !== shown || bits.userData.hookStyle !== true) {
+      while (bits.children.length) bits.remove(bits.children[0]);
+      const geo = new THREE.BoxGeometry(0.07, 0.07, 0.07);
+      const cols = ['#f6d56b', '#ff8a3d', '#e07a3a', '#7dffb0', '#ff4fa3'];
+      for (let i = 0; i < shown; i++) {
+        const c = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: cols[i % cols.length], roughness: 0.42 }));
         const row = i % 3, stack = Math.floor(i / 3);
         c.position.set((row - 1) * 0.04, 0.02 + stack * 0.065, 0.05 + row * 0.012);
-      } else {
-        // Relative to hoopTop pivot (knot)
-        const a = (i / Math.max(1, shown)) * Math.PI * 2;
-        const side = i % 2 === 0 ? -0.52 : 0.55;
-        c.position.set(side + Math.cos(a) * 0.16, 0.56 + Math.sin(a) * 0.12, Math.sin(a) * 0.06);
+        bits.add(c);
       }
-      bits.add(c);
+      bits.userData.n = shown;
+      bits.userData.hookStyle = true;
     }
-    bits.userData.n = shown;
-    bits.userData.hookStyle = isHook;
-  }
-  if (isHook) {
-    // Blocks ride the spinning tip
     bits.rotation.y = t * (1.8 + reach * 4);
     bits.rotation.x = Math.sin(t * 2.2) * 0.2;
     bits.position.y = 0.2 + Math.sin(t * 4) * 0.015;
-  } else {
-    bits.rotation.y = t * 0.5;
+    return;
+  }
+  // Classic gold-ring lasso
+  const base = mesh.userData.ringBase || 0.42;
+  const R = base + Math.sqrt(Math.max(0, n)) * 0.11;
+  const spin = t * (4.6 + Math.min(n, 10) * 0.28);
+  mesh.userData.ring.scale.setScalar(R / base);
+  if (mesh.userData.ring2) mesh.userData.ring2.scale.setScalar(R / base);
+  const spinner = mesh.userData.spinner;
+  if (spinner) spinner.rotation.y = spin;
+  if (hoop) hoop.position.set(0, 0.74 + Math.sin(t * 2.2) * 0.02, -0.05 - reach * 0.62);
+  const knot = mesh.userData.knot;
+  if (knot) knot.position.set(0, 0, R);
+  const bits = mesh.userData.hoopBits;
+  if (bits) {
+    const shown = Math.min(n, 10);
+    if (bits.userData.n !== shown || bits.userData.r !== R || bits.userData.hookStyle) {
+      while (bits.children.length) bits.remove(bits.children[0]);
+      const geo = new THREE.BoxGeometry(0.13, 0.13, 0.13);
+      const cols = ['#f6d56b', '#ff8a3d', '#fff4c8', '#e07a3a', '#7dffb0', '#ff4fa3'];
+      for (let i = 0; i < shown; i++) {
+        const c = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: cols[i % cols.length], roughness: 0.42 }));
+        const a = (i / Math.max(1, shown)) * Math.PI * 2;
+        const rr = Math.max(0.08, R * 0.55);
+        c.position.set(Math.cos(a) * rr, 0, Math.sin(a) * rr);
+        bits.add(c);
+      }
+      bits.userData.n = shown;
+      bits.userData.r = R;
+      bits.userData.hookStyle = false;
+    }
+  }
+  const segs = mesh.userData.ropeSegs;
+  const tip = mesh.userData.gripTip;
+  if (!segs || !tip || !hoop || !knot) return;
+  const end = mesh.userData._end || (mesh.userData._end = new THREE.Vector3());
+  const mid = mesh.userData._mid || (mesh.userData._mid = new THREE.Vector3());
+  const pa = mesh.userData._pa || (mesh.userData._pa = new THREE.Vector3());
+  const pb = mesh.userData._pb || (mesh.userData._pb = new THREE.Vector3());
+  end.copy(knot.position).add(hoop.position);
+  mid.set((tip.x + end.x) * 0.5 + Math.sin(t * 3) * 0.04, (tip.y + end.y) * 0.55, (tip.z + end.z) * 0.5 + 0.05);
+  const N = segs.length;
+  for (let i = 0; i < N; i++) {
+    const u0 = i / N, u1 = (i + 1) / N;
+    const s0 = 1 - u0, s1 = 1 - u1;
+    pa.set(s0 * s0 * tip.x + 2 * s0 * u0 * mid.x + u0 * u0 * end.x, s0 * s0 * tip.y + 2 * s0 * u0 * mid.y + u0 * u0 * end.y, s0 * s0 * tip.z + 2 * s0 * u0 * mid.z + u0 * u0 * end.z);
+    pb.set(s1 * s1 * tip.x + 2 * s1 * u1 * mid.x + u1 * u1 * end.x, s1 * s1 * tip.y + 2 * s1 * u1 * mid.y + u1 * u1 * end.y, s1 * s1 * tip.z + 2 * s1 * u1 * mid.z + u1 * u1 * end.z);
+    linkRope(segs[i], pa.x, pa.y, pa.z, pb.x, pb.y, pb.z);
   }
 }
 function rayEnemy(q, dx, dy, dz, maxDist) {
@@ -7763,18 +9345,32 @@ function makeLassoFlightMesh(team, n, skin = '', kind = 'bomb') {
     g.userData.skin = 'hook';
     return g;
   }
-  const g = makeLassoRopeMesh();
-  g.scale.setScalar(1.2 + Math.sqrt(Math.max(0, n)) * 0.04);
-  const top = g.userData.hoopTop || g;
-  const shown = Math.min(n, 14);
-  const geo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+  // Classic thrown gold ring
+  const g = new THREE.Group();
+  const R = 0.46 + Math.sqrt(Math.max(0, n)) * 0.12;
+  const ropeM = new THREE.MeshStandardMaterial({ color: '#f6e2b4', roughness: 0.48 });
+  const gold = new THREE.MeshStandardMaterial({ color: '#e8c56a', emissive: TEAMS[team].color, emissiveIntensity: 0.35, metalness: 0.45, roughness: 0.32 });
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(R, 0.042, 10, 32), gold);
+  ring.rotation.x = Math.PI / 2;
+  const knot = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), gold);
+  knot.position.set(0, 0, R);
+  g.add(ring, knot);
+  const shown = Math.min(n, 10);
+  const geo = new THREE.BoxGeometry(0.16, 0.16, 0.16);
   const mat = new THREE.MeshStandardMaterial({ color: '#f6d56b', roughness: 0.45 });
   for (let i = 0; i < shown; i++) {
     const c = new THREE.Mesh(geo, mat);
-    const a = (i / shown) * Math.PI * 2;
-    const side = i % 2 === 0 ? -0.5 : 0.52;
-    c.position.set(side + Math.cos(a) * 0.16, 0.56 + Math.sin(a) * 0.1, 0);
-    top.add(c);
+    const a = (i / Math.max(1, shown)) * Math.PI * 2;
+    c.position.set(Math.cos(a) * R * 0.55, 0, Math.sin(a) * R * 0.55);
+    g.add(c);
+  }
+  let ax = 0, ay = 0, az = R;
+  for (let i = 1; i <= 5; i++) {
+    const bx = 0, by = -0.03 * i, bz = R + 0.16 * i;
+    const seg = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.016, 1, 6), ropeM);
+    linkRope(seg, ax, ay, az, bx, by, bz);
+    g.add(seg);
+    ax = bx; ay = by; az = bz;
   }
   g.userData.team = team;
   return g;
@@ -7980,7 +9576,7 @@ function shootMouse() {
   if (me.item === 'gun') return;
   if (gun.reload > 0 || gun.autoCd > 0) return;
   const gdef = equippedGun(me);
-  if (gdef.id === 'bow' || gdef.id === 'sniper' || gdef.id === 'paintbrush' || gdef.id === 'laser' || gdef.id === 'crossbow' || gdef.id === 'canon') return;
+  if (gdef.id === 'bow' || gdef.id === 'sniper' || gdef.id === 'paintbrush' || gdef.id === 'laser' || gdef.id === 'crossbow' || gdef.id === 'canon' || gdef.id === 'shuriken' || gdef.id === 'hammer' || gdef.id === 'tazer') return;
   if (gdef.id === 'lasso') { useLasso(me, ...aimDir()); return; }
   if (gdef.id === 'spray') {
     if (gun.sprayLeft > 0) return;
@@ -7993,6 +9589,11 @@ function shootMouse() {
   if (gdef.id === 'gauntlet') {
     gun.recoil = 0.7; gun.autoCd = gdef.rate;
     fireGauntlet(me);
+    return;
+  }
+  if (gdef.id === 'spear') {
+    gun.recoil = 0.95; gun.autoCd = gdef.rate || 0.3;
+    fireSpear(me);
     return;
   }
   if (gdef.id === 'shotgun') {
@@ -8050,7 +9651,7 @@ function startReload() {
     sfx('reload');
     return;
   }
-  if (id === 'bow' || id === 'gauntlet' || id === 'paintbrush' || id === 'laser' || id === 'crossbow' || id === 'canon' || id === 'lasso') return;
+  if (id === 'bow' || id === 'gauntlet' || id === 'paintbrush' || id === 'laser' || id === 'crossbow' || id === 'canon' || id === 'lasso' || id === 'spear' || id === 'hammer' || id === 'tazer') return;
   if (gun.reload <= 0 && gun.ammo < max) {
     gun.reload = RELOAD_TIME;
     gun.elecShot = 0;
@@ -8058,6 +9659,13 @@ function startReload() {
     gun.blew = 0;
     gun.paperSnd = 0;
     gun.paperSeat = 0;
+    if (id === 'shuriken') {
+      gun.shuriBurst = 0;
+      gun.shuriHeld = false;
+      gun.charging = false;
+      gun.charge = 0;
+      gun.ammo = 0; // current stars vanish; fresh stack appears when reload finishes
+    }
     if (id === 'rpg' && equippedWskin('rpg') === 'balloon') {
       sfx('balloon_pop');
       if (me) {
@@ -8066,6 +9674,7 @@ function startReload() {
       }
     }
     else if (id === 'sniper' && equippedWskin('sniper') === 'cardboard') sfx('paper_stuff');
+    else if (id === 'shuriken' && equippedWskin('shuriken') === 'papershuri') sfx('paper_stuff');
     else if (id === 'shotgun' && equippedWskin('shotgun') === 'wine') { gun.wineBroke = 0; sfx('reload'); }
     else if (id === 'spray' && equippedWskin('spray') === 'water') { gun.waterSpring = 0; sfx('reload'); }
     else sfx('reload');
@@ -8074,6 +9683,15 @@ function startReload() {
 
 function updateMe(dt) {
   if (!me) return;
+  if (me.tazeFling) { tickTazeFling(me, dt); return; }
+  if (me.tazed) {
+    // Stuck in enemy electricity — no move / shoot / items
+    me.vx = me.vy = me.vz = 0;
+    mouseDown = false; wantBomb = false;
+    gun.charging = false;
+    if (Math.random() < dt * 18) burst(me.x, me.y + 0.5, me.z, 2, '#7ef6ff', 2.5, { life: 0.2, size: 0.35, up: 0.5 });
+    return;
+  }
   const gdef = equippedGun(me);
   gun.recoil = Math.max(0, gun.recoil - dt * 7);
   gun.autoCd = Math.max(0, gun.autoCd - dt);
@@ -8162,11 +9780,49 @@ function updateMe(dt) {
   if (gdef.id === 'bow' && equippedWskin('bow') === 'staff' && !gun.charging && Math.random() < dt * 3) {
     burst(me.x, me.y + 1.05, me.z, 2, '#ffe27a', 1.2, { life: 0.28, size: 0.4, up: 0.6 });
   }
-    // walk speed from equipped gun
+    // walk speed from equipped gun (+ personal speed / flash applied in moveBody)
   me.walkMul = gdef.walkMul || 1;
+  if (me.flash && me.alive && Math.hypot(me.vx, me.vz) > 2 && Math.random() < 0.55) {
+    burst(me.x - me.vx * 0.04, me.y + 0.2, me.z - me.vz * 0.04, 2, Math.random() < 0.5 ? '#ffd21f' : '#3ec6ff', 2.4, { life: 0.22, size: 0.35, up: 0.05 });
+  }
   if (gdef.id !== 'laser' && gun.laserBeam) endLaserBeam(false);
-  if (gun.charging && mouseDown && (gdef.id === 'bow' || gdef.id === 'sniper' || gdef.id === 'paintbrush' || gdef.id === 'laser' || gdef.id === 'crossbow' || gdef.id === 'canon')) {
-    if (gdef.id === 'laser' && gun.laserBeam) {
+  gun.spearAnim = Math.max(0, (gun.spearAnim || 0) - dt * 3.4);
+  gun.hammerAnim = Math.max(0, (gun.hammerAnim || 0) - dt * 2.6);
+  tickShurikenBurst(dt);
+  if (gun.hammerLeap || me.hammerLeap) {
+    tickHammerLeap(me, dt);
+    hideHammerGraph();
+  }
+  if (!(gun.charging && gdef.id === 'hammer') && !gun.hammerLeap) hideHammerGraph();
+  if (gun.charging && mouseDown && (gdef.id === 'bow' || gdef.id === 'sniper' || gdef.id === 'paintbrush' || gdef.id === 'laser' || gdef.id === 'crossbow' || gdef.id === 'canon' || gdef.id === 'shuriken' || gdef.id === 'hammer' || gdef.id === 'tazer')) {
+    if (gdef.id === 'tazer') {
+      gun.charge += dt;
+      const need = gdef.charge || 1;
+      if (!gun.tazeOn && gun.charge >= need) startTazeBolts(me);
+      if (gun.tazeOn) tickTazeHold(me, dt);
+      else {
+        const [dx, dy, dz] = aimDir();
+        const tip = tazeTip(me, dx, dy, dz);
+        if (Math.random() < dt * 12) burst(tip.x, tip.y, tip.z, 1, '#7ef6ff', 1.5, { life: 0.18, size: 0.25 });
+      }
+    } else if (gdef.id === 'hammer') {
+      gun.charge += dt;
+      const need = gdef.charge || 3;
+      const [dx, dy, dz] = aimDir();
+      const pt = hammerAimPoint(me, dx, dy, dz);
+      gun.hammerMark = pt;
+      updateHammerGraph(me, pt, gun.charge, need);
+      if (pt && gun.charge >= need && Math.random() < dt * 14) {
+        burst(pt.x, pt.y + 0.12, pt.z, 2, TEAMS[me.team].css, 1.5, { life: 0.22, size: 0.4, up: 0.7 });
+      }
+    } else if (gdef.id === 'shuriken') {
+      gun.charge += dt;
+      const n = shurikenBurstCount(gun.charge);
+      if (n >= 2 && gun.reload <= 0 && gun.ammo > 0 && gun.autoCd <= 0 && gun.shuriBurst <= 0) {
+        gun.shuriHeld = true;
+        queueShurikenBurst(n);
+      }
+    } else if (gdef.id === 'laser' && gun.laserBeam) {
       // beam already active — tick duration
     } else {
       const cap = gdef.id === 'sniper' ? 2 : (gdef.charge || 2);
@@ -8230,12 +9886,16 @@ function updateMe(dt) {
     }
     wantBomb = false; gun.charging = false; gun.charge = 0; gun.xbowLoaded = false;
     gun.sprayLeft = 0; gun.canonFlight = 0; gun.canonShock = 0; me.canonLift = 0;
+    gun.hammerLeap = null; gun.hammerMark = null; me.hammerLeap = null;
+    if (gun.tazeOn) { gun.tazeOn = false; clearTazeBolts(); freeTazeVictims(me.id); }
     me.lassoN = 0; me.lassoSlam = null;
+    me.tazed = null; me.tazeFling = null;
     endSkyBoost(me);
     if (gun.laserBeam) endLaserBeam(false);
     return;
   }
-  const canMove = phase === 'play' && !me.boulderRide;
+  const leaping = !!(gun.hammerLeap || me.hammerLeap);
+  const canMove = phase === 'play' && !me.boulderRide && !leaping;
   const f = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0) + (-joyY);
   const s = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0) + joyX;
   let wx = -Math.sin(me.yaw) * f + Math.cos(me.yaw) * s, wz = -Math.cos(me.yaw) * f - Math.sin(me.yaw) * s;
@@ -8244,26 +9904,30 @@ function updateMe(dt) {
   const jump = canMove && jumpBuf > 0 && (me.onGround || me.coyote > 0);
   if (jump) jumpBuf = 0;
   const touched = [];
-  if (!me.boulderRide) {
+  if (!me.boulderRide && !leaping) {
     moveBody(me, canMove ? wx : 0, canMove ? wz : 0, jump, dt, touched);
     if (canMove) touchPaint(me, touched);
   }
   tickSkyBoost(me, dt);
-  if (wantBomb && phase === 'play' && !me.boulderRide) useAccessory(me, ...aimDir());
+  if (wantBomb && phase === 'play' && !me.boulderRide && !leaping) useAccessory(me, ...aimDir());
   wantBomb = false;
-  if (mouseDown && canMove && !gun.charging && gdef.id !== 'bow' && gdef.id !== 'sniper' && gdef.id !== 'rpg' && gdef.id !== 'gauntlet' && gdef.id !== 'paintbrush' && gdef.id !== 'laser' && gdef.id !== 'crossbow' && gdef.id !== 'shotgun' && gdef.id !== 'spray' && gdef.id !== 'canon' && gun.autoCd <= 0 && gun.reload <= 0) {
-    if (me.item === 'gun') {
-      const [dx, dy, dz] = aimDir(), sp = 0.05;
-      const a = dx + (Math.random() - 0.5) * sp, b = dy + (Math.random() - 0.5) * sp, c = dz + (Math.random() - 0.5) * sp, n = Math.hypot(a, b, c);
-      fireShot(me, a / n, b / n, c / n, gdef.dmg, 'shot'); gun.autoCd = 0.11; gun.recoil = 0.6;
-    } else if (gdef.id === 'slingshot') {
-      if (gun.ammo <= 0) toast('Out of paint! Press R to reload');
-      else {
-        gun.ammo--; gun.recoil = 0.55; gun.autoCd = gdef.rate;
-        const look = equippedWskin('slingshot') === 'flame' ? 'wind' : '';
-        fireShot(me, ...aimDir(), gdef.dmg, 'shot', { look });
+  if (mouseDown && canMove && !gun.charging && gdef.id !== 'bow' && gdef.id !== 'sniper' && gdef.id !== 'rpg' && gdef.id !== 'gauntlet' && gdef.id !== 'paintbrush' && gdef.id !== 'laser' && gdef.id !== 'crossbow' && gdef.id !== 'shotgun' && gdef.id !== 'spray' && gdef.id !== 'canon' && gdef.id !== 'spear' && gdef.id !== 'shuriken' && gdef.id !== 'hammer' && gdef.id !== 'tazer' && gun.reload <= 0) {
+    if (gdef.id === 'lasso') {
+      useLasso(me, ...aimDir());
+    } else if (gun.autoCd <= 0) {
+      if (me.item === 'gun') {
+        const [dx, dy, dz] = aimDir(), sp = 0.05;
+        const a = dx + (Math.random() - 0.5) * sp, b = dy + (Math.random() - 0.5) * sp, c = dz + (Math.random() - 0.5) * sp, n = Math.hypot(a, b, c);
+        fireShot(me, a / n, b / n, c / n, gdef.dmg, 'shot'); gun.autoCd = 0.11; gun.recoil = 0.6;
+      } else if (gdef.id === 'slingshot') {
+        if (gun.ammo <= 0) toast('Out of paint! Press R to reload');
+        else {
+          gun.ammo--; gun.recoil = 0.55; gun.autoCd = gdef.rate;
+          const look = equippedWskin('slingshot') === 'flame' ? 'wind' : '';
+          fireShot(me, ...aimDir(), gdef.dmg, 'shot', { look });
+        }
       }
-    } else if (gdef.id === 'lasso') useLasso(me, ...aimDir());
+    }
   }
   for (let k = 0; k < items.length; k++) {
     const it = items[k];
@@ -8301,7 +9965,7 @@ function acceptSeq(seq) {
 }
 function hostUpdate(dt) {
   for (const q of players.values()) {
-    if (!q.local && !q.npc && q.tgt) {
+    if (!q.local && !q.npc && q.tgt && !q.hammerLeap && !q.tazed && !q.tazeFling) {
       q.x = q.tgt.x; q.y = q.tgt.y; q.z = q.tgt.z;
       if (q.tgt.yaw != null) q.yaw = q.tgt.yaw;
       if (q.tgt.pitch != null) q.pitch = q.tgt.pitch;
@@ -8534,9 +10198,13 @@ function startGame(list, mapId) {
   for (const d of list) players.set(d.id, makePlayer(d, slots[d.team]++));
   me = players.get(myCid);
   me.gun = profile.gun; me.accessory = profile.accessory; me.gunLv = gunLevel(profile.gun); me.accLv = accLevel(profile.accessory); me.wskin = equippedWskin(profile.gun);
+  applyPersonalToMe();
   for (const s of items) { s.type = null; s.timer = 3 + rng() * 3; }
   gun.ammo = maxAmmoFor(me); gun.reload = 0; gun.charge = 0; gun.charging = false; gun.autoCd = 0; gun.xbowLoaded = false;
   gun.sprayLeft = 0; gun.canonCd = 0; gun.canonFlight = 0; gun.canonShock = 0; gun.canonDidLift = false;
+  gun.spearAnim = 0; gun.shuriBurst = 0; gun.shuriGap = 0; gun.shuriHeld = false;
+  gun.hammerAnim = 0; gun.hammerLeap = null; gun.hammerMark = null; hideHammerGraph();
+  gun.tazeOn = false; gun.tazeCaught = []; clearTazeBolts();
   timeLeft = MATCH_TIME; countdown = 3; phase = 'countdown'; gameTime = 0; lastHp = MAX_HP;
   netSeq = 0; acceptSeq.n = 0; vitalIds.clear();
   flashT = 0; flashVisionOn = false;
@@ -8904,7 +10572,7 @@ function showSurvivalResults(waves) {
 }
 function startSolo() {
   lobby = { solo: true, isHost: true, mode: gameMode };
-  const list = [{ id: myCid, name: profile.name, skin: profile.skin, gun: profile.gun, accessory: profile.accessory, team: 0, gunLv: gunLevel(profile.gun), accLv: accLevel(profile.accessory), wskin: equippedWskin(profile.gun) }];
+  const list = [{ id: myCid, name: profile.name, skin: profile.skin, gun: profile.gun, accessory: profile.accessory, team: 0, gunLv: gunLevel(profile.gun), accLv: accLevel(profile.accessory), wskin: equippedWskin(profile.gun), up: myUpPayload() }];
   if (gameMode !== 'survival') fillNpcs(list);
   beginVote(list);
 }
@@ -8914,7 +10582,7 @@ function fillNpcs(list) {
   const npcGuns = diff < 0.2 ? ['paintball', 'paintball', 'paintball', 'bow']
     : diff < 0.5 ? ['paintball', 'bow', 'slingshot', 'paintball']
     : diff < 0.75 ? ['slingshot', 'bow', 'rpg', 'sniper', 'gauntlet']
-    : ['sniper', 'gauntlet', 'paintbrush', 'laser', 'crossbow', 'shotgun', 'rpg', 'spray', 'canon', 'lasso'];
+    : ['sniper', 'gauntlet', 'paintbrush', 'laser', 'crossbow', 'shotgun', 'rpg', 'spray', 'canon', 'lasso', 'spear', 'shuriken', 'hammer', 'tazer'];
   const npcAcc = diff < 0.35 ? ['grenade']
     : diff < 0.55 ? ['grenade', 'landmine']
     : diff < 0.75 ? ['grenade', 'landmine', 'jumppad', 'flashbang']
@@ -9038,7 +10706,7 @@ async function createLobby() {
     try { useClient(await connectBroker()); } catch (e) { $('netStatus').textContent = 'Could not reach the game server.'; return; }
   }
   lobby = { id, isHost: true, solo: false, mode: gameMode, name: profile.name + (gameMode === 'survival' ? ' survival' : "'s lobby"), inGame: false,
-            roster: [{ cid: myCid, name: profile.name, skin: profile.skin, gun: profile.gun, accessory: profile.accessory, team: 0, gunLv: gunLevel(profile.gun), accLv: accLevel(profile.accessory), wskin: equippedWskin(profile.gun), seen: performance.now() }] };
+            roster: [{ cid: myCid, name: profile.name, skin: profile.skin, gun: profile.gun, accessory: profile.accessory, team: 0, gunLv: gunLevel(profile.gun), accLv: accLevel(profile.accessory), wskin: equippedWskin(profile.gun), up: myUpPayload(), seen: performance.now() }] };
   client.subscribe(roomTopic());
   announce();
   announceTimer = setInterval(announce, 4000);
@@ -9050,7 +10718,7 @@ function joinLobby(id, name) {
   if (!client || !client.connected) return;
   lobby = { id, isHost: false, solo: false, mode: 'pvp', name, hostCid: null, roster: [], inGame: false, lastHost: performance.now() };
   client.subscribe(roomTopic());
-  send({ t: 'join', name: profile.name, skin: profile.skin, gun: profile.gun, accessory: profile.accessory, gunLv: gunLevel(profile.gun), accLv: accLevel(profile.accessory), wskin: equippedWskin(profile.gun) });
+  send({ t: 'join', name: profile.name, skin: profile.skin, gun: profile.gun, accessory: profile.accessory, gunLv: gunLevel(profile.gun), accLv: accLevel(profile.accessory), wskin: equippedWskin(profile.gun), up: myUpPayload() });
   hbTimer = setInterval(lobbyHeartbeat, 1000);
   $('netStatus').textContent = 'Joining...';
   setTimeout(() => {
@@ -9091,7 +10759,7 @@ function removeHuman(cid) {
 }
 function broadcastRoster() {
   if (!lobby || !lobby.isHost) return;
-  send({ t: 'roster', roster: lobby.roster.map(({ cid, name, skin, gun, accessory, team, gunLv, accLv, wskin }) => ({ cid, name, skin, gun, accessory, team, gunLv: gunLv || 0, accLv: accLv || 0, wskin: wskin || '' })), inGame: lobby.inGame, name: lobby.name, mode: lobby.mode || 'pvp' });
+  send({ t: 'roster', roster: lobby.roster.map(({ cid, name, skin, gun, accessory, team, gunLv, accLv, wskin, up }) => ({ cid, name, skin, gun, accessory, team, gunLv: gunLv || 0, accLv: accLv || 0, wskin: wskin || '', up: up || { hp: 0, dmg: 0, spd: 0 } })), inGame: lobby.inGame, name: lobby.name, mode: lobby.mode || 'pvp' });
   if (state === 'lobby') showLobby();
 }
 function setTeam(cid, team) {
@@ -9104,7 +10772,7 @@ function setTeam(cid, team) {
 }
 function hostStart() {
   const surv = lobby.mode === 'survival';
-  const list = lobby.roster.map(r => ({ id: r.cid, name: r.name, skin: r.skin, gun: r.gun || 'paintball', accessory: r.accessory || 'grenade', team: surv ? 0 : r.team, gunLv: r.gunLv || 0, accLv: r.accLv || 0, wskin: r.wskin || '' }));
+  const list = lobby.roster.map(r => ({ id: r.cid, name: r.name, skin: r.skin, gun: r.gun || 'paintball', accessory: r.accessory || 'grenade', team: surv ? 0 : r.team, gunLv: r.gunLv || 0, accLv: r.accLv || 0, wskin: r.wskin || '', up: r.up || { hp: 0, dmg: 0, spd: 0 } }));
   if (!surv) fillNpcs(list);
   beginVote(list);
 }
@@ -9122,7 +10790,9 @@ function handle(m) {
         lobby.roster.push({
           cid: m.from, name: clean(m.name), skin: skinById(m.skin).id,
           gun: gunById(m.gun).id, accessory: accById(m.accessory).id,
-          team: lobby.mode === 'survival' ? 0 : (a <= b ? 0 : 1), gunLv: m.gunLv || 0, accLv: m.accLv || 0, wskin: m.wskin || '', seen: performance.now(),
+          team: lobby.mode === 'survival' ? 0 : (a <= b ? 0 : 1), gunLv: m.gunLv || 0, accLv: m.accLv || 0, wskin: m.wskin || '',
+          up: m.up && typeof m.up === 'object' ? { hp: upCount('hp', m.up), dmg: upCount('dmg', m.up), spd: upCount('spd', m.up) } : { hp: 0, dmg: 0, spd: 0 },
+          seen: performance.now(),
         });
         toast(clean(m.name) + ' joined');
       }
@@ -9132,12 +10802,28 @@ function handle(m) {
     case 'leave': if (host) removeHuman(m.from); else if (m.from === lobby.hostCid) hostGone(); break;
     case 'closed': if (!host && m.from === lobby.hostCid) hostGone(); break;
     case 'team': if (host) setTeam(m.from, m.team); break;
+    case 'upSync': if (host && m.up) {
+      const r = lobby.roster.find(p => p.cid === m.from);
+      if (r) r.up = { hp: upCount('hp', m.up), dmg: upCount('dmg', m.up), spd: upCount('spd', m.up) };
+      const q = players.get(m.from);
+      if (q && !q.local) {
+        q.up = r ? r.up : { hp: upCount('hp', m.up), dmg: upCount('dmg', m.up), spd: upCount('spd', m.up) };
+        syncPersonalFlags(q);
+      }
+      if (!lobby.solo) broadcastRoster();
+      break;
+    }
     case 'roster':
       if (host) return;
       if (!lobby.hostCid) { lobby.hostCid = m.from; lobby.lastHost = performance.now(); show('serverPopup', false); state = 'lobby'; }
       if (m.from !== lobby.hostCid) return;
       lobby.roster = m.roster; lobby.inGame = m.inGame; lobby.name = m.name; lobby.mode = m.mode || lobby.mode || 'pvp';
       if (!lobby.roster.find(r => r.cid === myCid)) { toast('You were removed from the lobby'); leaveLobby(true); return; }
+      // Keep live combat flags in sync with roster upgrades
+      for (const r of lobby.roster) {
+        const q = players.get(r.cid);
+        if (q && !q.local && r.up) { q.up = r.up; syncPersonalFlags(q); }
+      }
       if (state === 'lobby') showLobby();
       break;
     case 'full': if (m.to === myCid) { toast('That lobby is full or already in battle'); leaveLobby(true); } break;
@@ -9180,6 +10866,140 @@ function handle(m) {
         applyGauntletHit(m.px ?? o[0], m.py ?? (o[1] - EYE), m.pz ?? o[2], d[0], d[1], d[2], range, m.team, m.dmg || 40, m.id);
       } else {
         paintGauntletPulse(o[0], o[1], o[2], d[0], d[1], d[2], range, m.team, false);
+      }
+      break;
+    }
+    case 'spear': if (state === 'game') {
+      const o = m.o, d = m.d, range = m.r || 5.2;
+      const mine = me && m.id === me.id;
+      if (!mine) {
+        for (let i = 1; i <= 5; i++) {
+          const t = i / 5;
+          const x = o[0] + d[0] * range * t, y = o[1] + d[1] * range * t, z = o[2] + d[2] * range * t;
+          if (mapMode === 'splat') { if (i % 2 === 0) splatBurst(x, y, z, 0.9, m.team, host); }
+          else forSphere(x, y, z, 0.85, ii => host ? hostPaint(ii, m.team) : setPaint(ii, m.team));
+        }
+        burst(o[0] + d[0] * 1.6, o[1] + d[1] * 1.2, o[2] + d[2] * 1.6, 12, TEAMS[m.team].css, 4, { life: 0.25 });
+      }
+      // Host applies damage for remote spears (local host already applied in fireSpear)
+      if (host && !mine) {
+        const shooter = players.get(m.id);
+        const ox = shooter ? shooter.x : o[0], oy = shooter ? shooter.y : (o[1] - EYE), oz = shooter ? shooter.z : o[2];
+        for (const p of players.values()) {
+          if (p.team === m.team || !p.alive || spawnImmune(p) || p.id === m.id) continue;
+          const vx = p.x - ox, vy = (p.y + 0.4) - (oy + EYE * 0.7), vz = p.z - oz;
+          const dist = Math.hypot(vx, vy, vz);
+          if (dist > range + 0.45) continue;
+          const dot = (vx * d[0] + vy * d[1] + vz * d[2]) / (dist || 1);
+          if (dot < 0.55) continue;
+          damage(p, m.dmg || 50, m.team, m.id, 'spear');
+          p.vx += d[0] * 7; p.vz += d[2] * 7; p.vy += 2.5;
+        }
+      }
+      break;
+    }
+    case 'hammerSlap': if (state === 'game') {
+      const o = m.o, d = m.d, h = m.h, range = m.r || 3.4;
+      const mine = me && m.id === me.id;
+      if (!mine && h) {
+        paintGrenades(h[0], h[1], h[2], m.team, host, 1);
+        hammerDust(h[0], h[1], h[2], false);
+        burst(h[0], h[1] + 0.2, h[2], 16, TEAMS[m.team].css, 5.5, { life: 0.32, size: 0.85 });
+      }
+      if (host && !mine && o && d) {
+        const shooter = players.get(m.id);
+        const ox = shooter ? shooter.x : o[0], oy = shooter ? shooter.y : (o[1] - EYE * 0.55), oz = shooter ? shooter.z : o[2];
+        for (const p of players.values()) {
+          if (p.team === m.team || !p.alive || spawnImmune(p) || p.id === m.id) continue;
+          const vx = p.x - ox, vy = (p.y + 0.4) - (oy + EYE * 0.55), vz = p.z - oz;
+          const dist = Math.hypot(vx, vy, vz);
+          if (dist > range + 0.55) continue;
+          const dot = (vx * d[0] + vy * d[1] + vz * d[2]) / (dist || 1);
+          if (dot < 0.35) continue;
+          damage(p, m.dmg || 150, m.team, m.id, 'hammer');
+          p.vx += d[0] * 10; p.vz += d[2] * 10; p.vy += 5; p.onGround = false;
+        }
+      }
+      break;
+    }
+    case 'hammerLeap': if (state === 'game') {
+      const q = players.get(m.id);
+      if (q && !(me && m.id === me.id) && m.from && m.to) beginHammerLeapAt(q, m.from, m.to, m.apex, m.dur);
+      break;
+    }
+    case 'hammerSmash': if (state === 'game') {
+      const q = players.get(m.id) || { id: m.id, team: m.team, local: false, wskin: m.skin || '' };
+      if (m.skin) q.wskin = m.skin;
+      const p = m.p;
+      if (!p) break;
+      if (host) hammerSmashLand(q, p[0], p[1], p[2], true);
+      else {
+        paintGrenades(p[0], p[1], p[2], m.team, false, 2);
+        hammerDust(p[0], p[1], p[2], true);
+        burst(p[0], p[1] + 0.3, p[2], 36, TEAMS[m.team].css, 9, { life: 0.55, size: 1.2 });
+        ring(p[0], p[1], p[2], m.team, 3);
+        if (m.skin === 'mjolnir') mjolnirLightningStrike(p[0], p[1], p[2]);
+        else sfx('explode');
+      }
+      break;
+    }
+    case 'tazeOn': if (state === 'game') {
+      const q = players.get(m.id);
+      if (q) burst(q.x, q.y + EYE, q.z, 12, m.skin === 'magnet' ? '#ff3b3b' : '#7ef6ff', 4, { life: 0.3 });
+      break;
+    }
+    case 'tazeCatch': if (state === 'game') {
+      const owner = players.get(m.id);
+      const d = m.d || [0, 0, 1];
+      if (!owner) break;
+      for (const id of (m.ids || [])) {
+        const o = players.get(id);
+        if (o && o.alive && !o.tazeFling) pinTazeVictim(owner, o, d[0], d[1], d[2]);
+      }
+      break;
+    }
+    case 'tazeRelease': if (state === 'game') {
+      const d = m.d || [0, 0.2, 1];
+      const posBy = new Map((m.pos || []).map(p => [p[0], [p[1], p[2], p[3]]]));
+      for (const id of (m.ids || [])) {
+        const o = players.get(id);
+        if (!o || !o.alive) continue;
+        beginTazeFling(o, d[0], d[1], d[2], m.team, m.id, posBy.get(id));
+      }
+      break;
+    }
+    case 'tazeImpact': if (state === 'game' && host) {
+      const o = players.get(m.vid);
+      if (!o) break;
+      // Client-reported impact — host auths boom + flat fling damage (deduped)
+      tazeExplodeVictim(o, true, {
+        x: m.x, y: m.y, z: m.z,
+        team: m.team, by: m.by || '', dmg: m.dmg || gunById('tazer').flingDmg || 100,
+      });
+      break;
+    }
+    case 'tazeBoom': if (state === 'game') {
+      const vic = players.get(m.vid);
+      if (vic) {
+        vic.tazeFling = null;
+        vic.tazed = null;
+        vic.tazeBoomDone = true;
+        if (m.x != null) { vic.x = m.x; vic.y = m.y; vic.z = m.z; }
+      }
+      if (!host) explodeAt(m.x, m.y, m.z, m.team, false, EXPLODER_R, 0, { byId: m.by || '', weapon: 'tazer', inkBoom: true });
+      break;
+    }
+    case 'tazeZap': if (state === 'game') {
+      const q = players.get(m.id);
+      const d = m.d || [0, 0, 1], range = m.r || 2;
+      if (q) {
+        const tip = tazeTip(q, d[0], d[1], d[2]);
+        burst(tip.x + d[0] * range * 0.6, tip.y, tip.z + d[2] * range * 0.6, 10, '#7ef6ff', 4, { life: 0.25 });
+      }
+      if (host && q && m.id !== (me && me.id)) {
+        for (const o of catchTazeTargets(q, d[0], d[1], d[2], range)) {
+          damage(o, m.dmg || 15, m.team, m.id, 'tazer');
+        }
       }
       break;
     }
@@ -9236,7 +11056,7 @@ function handle(m) {
     case 'fire': if (state === 'game') spawnProjectile(m.k, m.team, m.id, m.o, m.v, host, {
       dmg: m.dmg ?? SHOT_DMG,
       maxDist: m.maxDist ?? ((m.k === 'arrow' || m.k === 'bolt' || m.k === 'rocket' || m.k === 'sniper' || m.k === 'hook' || m.k === 'spray' || m.k === 'plasma') ? (m.k === 'hook' ? 28 : BOW_RANGE) : SHOT_RANGE),
-      paintR: m.k === 'arrow' || m.k === 'bolt' ? 1.15 : m.k === 'rocket' ? 1.6 : m.k === 'exploder' ? ((m.blast || EXPLODER_R) * 0.4) : m.k === 'boulder' ? 1.4 : 0.95,
+      paintR: m.pr != null ? m.pr : (m.look === 'shuriken' ? BOMB_R * 0.5 : m.k === 'arrow' || m.k === 'bolt' ? 1.15 : m.k === 'rocket' ? 1.6 : m.k === 'exploder' ? ((m.blast || EXPLODER_R) * 0.4) : m.k === 'boulder' ? 1.4 : 0.95),
       knock: m.k === 'rocket' ? (gunById('rpg').knock || 32) : 0,
       blast: m.blast || (m.k === 'rocket' ? (gunById('rpg').blast || 3.8) : m.k === 'exploder' ? EXPLODER_R : m.k === 'boulder' ? BOULDER_BLAST : (m.flash ? BOMB_R * 1.5 : 0)),
       dmgScale: m.ds || 1, flashDur: m.fd || 0,
@@ -9724,6 +11544,7 @@ $('tabSkins').onclick = () => { shopTab = 'skins'; renderShop(); };
 $('tabGuns').onclick = () => { shopTab = 'guns'; renderShop(); };
 $('tabAcc').onclick = () => { shopTab = 'acc'; renderShop(); };
 $('tabWskins').onclick = () => { shopTab = 'wskins'; renderShop(); };
+$('tabUp').onclick = () => { shopTab = 'up'; renderShop(); };
 $('viewTabStats').onclick = () => { if (viewItem) openView(viewItem.kind, viewItem.id, 'stats'); };
 $('viewTabSkins').onclick = () => { if (viewItem && viewItem.kind === 'gun') openView('gun', viewItem.id, 'skins'); };
 $('btnLeave').onclick = () => leaveLobby(false);
@@ -9852,6 +11673,10 @@ function gunViewLines(g, lv) {
   if (g.id === 'spray') return [dmg, 'Magazine ' + (g.ammo + lv) + ' · +1 per level', 'Burst stays 4'];
   if (g.id === 'canon') return [dmg, 'Plasma cooldown ' + (lv ? up.rate : g.rate) + 's · -4% per level', 'Lift charge ' + (lv ? up.charge : g.charge) + 's · -4% per level', 'Splash radius ' + add.toFixed(2) + ' · +0.26 every 5 levels'];
   if (g.id === 'lasso') return [dmg, 'Blocks ' + (10 + Math.floor(lv / 2)) + ' · +1 every 2 levels', 'Throw radius +' + add.toFixed(2) + ' · +0.26 every 5 levels', 'Smash stays half HP'];
+  if (g.id === 'spear') return [dmg, 'Reach ' + ((g.melee || 5.2) + lv * 0.08).toFixed(1) + ' · +0.08 per level', cool(g.rate, up.rate), 'Faster movement multiplies jab damage'];
+  if (g.id === 'shuriken') return [dmg, 'Magazine ' + ((g.ammo || 10) + Math.floor(lv / 2)) + ' · +1 every 2 levels', cool(g.rate, up.rate), 'Hold longer to throw bigger continuous bursts'];
+  if (g.id === 'hammer') return [dmg, 'Reach ' + ((g.melee || 3.4) + lv * 0.06).toFixed(1) + ' · +0.06 per level', cool(g.rate, up.rate), 'Smash ' + Math.round((g.smashDmg || 250) * (1 + lv * 0.05)) + ' · radius ' + ((g.smashR || 3) + lv * 0.05).toFixed(1), 'Charge ' + (lv ? up.charge : g.charge) + 's · -4% per level'];
+  if (g.id === 'tazer') return [dmg, 'Range ' + ((g.melee || 2) + lv * 0.05).toFixed(1) + ' · +0.05 per level', cool(g.rate, up.rate), 'Hold ' + (lv ? up.charge : g.charge) + 's for bolts · release fling deals ' + (g.flingDmg || 100) + ' · exploder paint'];
   return [dmg];
 }
 function gunViewRadius(g, lv) {
@@ -10020,15 +11845,17 @@ function renderShop() {
   $('tabGuns').classList.toggle('on', shopTab === 'guns');
   $('tabAcc').classList.toggle('on', shopTab === 'acc');
   $('tabWskins').classList.toggle('on', shopTab === 'wskins');
-  const titles = { skins: 'SKIN SHOP', guns: 'GUN SHOP', acc: 'ACCESSORY SHOP', wskins: 'WEAPON SKINS' };
+  if ($('tabUp')) $('tabUp').classList.toggle('on', shopTab === 'up');
+  const titles = { skins: 'SKIN SHOP', guns: 'GUN SHOP', acc: 'ACCESSORY SHOP', wskins: 'WEAPON SKINS', up: 'PERSONAL UPGRADES' };
   const hints = {
     skins: 'Buy a skin once. You keep it even if your coins go down.',
     guns: 'Paintball Gun is free. Buy every other gun once — it stays yours.',
     acc: 'Grenade is free. Buy an accessory once and you keep it.',
     wskins: 'Buy a weapon skin once. Then open that gun, View, Skins, and equip it. The gun card and HUD switch to the skin.',
+    up: 'Permanent upgrades. Each buy costs +10 more. Cap 300 for a special finish.',
   };
   $('shopTitle').textContent = titles[shopTab];
-  $('shopTitle').style.color = shopTab === 'guns' ? '#ffd21f' : shopTab === 'acc' ? '#3ee68a' : shopTab === 'wskins' ? '#3ec6ff' : '#ff4fa3';
+  $('shopTitle').style.color = shopTab === 'guns' ? '#ffd21f' : shopTab === 'acc' ? '#3ee68a' : shopTab === 'wskins' ? '#3ec6ff' : shopTab === 'up' ? '#b57bff' : '#ff4fa3';
   $('shopHint').textContent = hints[shopTab];
   const grid = $('shopGrid');
   grid.innerHTML = '';
@@ -10099,6 +11926,34 @@ function renderShop() {
         view.onclick = e => { e.stopPropagation(); openView('gun', s.gun, 'skins'); };
         row.append(view);
         d.append(row);
+      }
+      grid.append(d);
+    }
+  } else if (shopTab === 'up') {
+    for (const u of PERSONAL_UPS) {
+      const n = upCount(u.id);
+      const maxed = n >= UP_MAX;
+      const cost = upCost(u.id);
+      const ps = personalFromUp(profile.up);
+      const d = document.createElement('div');
+      d.className = 'skin' + (maxed ? ' sel' : '');
+      const icon = makeShopIcon('up_' + u.id);
+      const nm = document.createElement('b'); nm.textContent = u.name;
+      const info = document.createElement('div'); info.className = 'muted';
+      let status = n + ' / ' + UP_MAX;
+      if (u.id === 'hp') status += maxed ? ' · INVINCIBLE' : (' · HP ' + (MAX_HP + ps.hpBonus));
+      if (u.id === 'dmg') status += maxed ? ' · ONE-PUNCH' : (' · +' + ps.dmgBonus + ' dmg');
+      if (u.id === 'spd') status += maxed ? ' · THE FLASH' : (' · +' + (n * 0.1).toFixed(1) + ' spd');
+      info.textContent = shopPick === u.id ? (maxed ? status : (cost + ' coins · ' + status)) : status;
+      const sub = document.createElement('div'); sub.className = 'muted'; sub.textContent = u.blurb;
+      if (maxed) {
+        const badge = document.createElement('div'); badge.className = 'hyperBadge'; badge.textContent = u.id === 'hp' ? 'INVINCIBLE' : u.id === 'dmg' ? 'ONE-PUNCH' : 'FLASH';
+        d.append(badge);
+      }
+      d.append(icon, nm, info, sub);
+      d.onclick = () => { shopPick = u.id; renderShop(); };
+      if (shopPick === u.id && !maxed) {
+        shopBuyRow(d, cost, () => { if (buyPersonalUp(u.id)) renderShop(); });
       }
       grid.append(d);
     }
@@ -10188,6 +12043,55 @@ function updateHud(dt) {
   } else if (gdef.id === 'gauntlet') {
     $('ammoText').textContent = equippedWskin('gauntlet') === 'gloves' ? 'PUNCH' : 'MELEE PULSE';
     $('reloadText').textContent = gun.autoCd > 0 ? 'COOLDOWN' : (equippedWskin('gauntlet') === 'gloves' ? 'GLOVES' : 'READY');
+  } else if (gdef.id === 'spear') {
+    const spd = Math.hypot(me.vx || 0, me.vz || 0);
+    const dmgNow = spearSpeedDmg(me, gdef.dmg || 50);
+    $('ammoText').textContent = gun.autoCd > 0 ? 'JABBING' : ('JAB · ' + dmgNow + ' DMG');
+    $('reloadText').textContent = gun.autoCd > 0 ? gun.autoCd.toFixed(1) + 's' : (spd > 1.5 ? 'SPEED BONUS' : 'MOVE FOR MORE');
+  } else if (gdef.id === 'hammer') {
+    const need = gdef.charge || 3;
+    const pct = Math.round(Math.min(1, gun.charge / need) * 100);
+    if (gun.hammerLeap || me.hammerLeap) {
+      $('ammoText').textContent = 'LEAPING';
+      $('reloadText').textContent = 'SMASH INCOMING';
+    } else if (gun.autoCd > 0) {
+      $('ammoText').textContent = 'COOLDOWN';
+      $('reloadText').textContent = gun.autoCd.toFixed(1) + 's';
+    } else if (gun.charging) {
+      const grounded = !!gun.hammerMark;
+      if (pct >= 100) {
+        $('ammoText').textContent = grounded ? 'SMASH READY' : 'AIM GROUND';
+        $('reloadText').textContent = grounded ? 'RELEASE TO LEAP' : 'CURSOR ON FLOOR';
+      } else {
+        $('ammoText').textContent = 'CHARGE ' + pct + '%';
+        $('reloadText').textContent = grounded ? 'HOLD / AIM PAD' : 'AIM AT GROUND';
+      }
+    } else {
+      $('ammoText').textContent = 'SLAP · 150';
+      $('reloadText').textContent = 'HOLD 3s · AIM GROUND';
+    }
+  } else if (gdef.id === 'tazer') {
+    const need = gdef.charge || 1;
+    const pct = Math.round(Math.min(1, gun.charge / need) * 100);
+    const n = (gun.tazeCaught || []).length;
+    const mag = equippedWskin('tazer') === 'magnet';
+    if (gun.autoCd > 0 && !gun.tazeOn) {
+      $('ammoText').textContent = 'COOLDOWN';
+      $('reloadText').textContent = gun.autoCd.toFixed(1) + 's';
+    } else if (gun.tazeOn) {
+      $('ammoText').textContent = n ? ('CAUGHT ×' + n) : (mag ? 'FIELD LIVE' : 'BOLTS LIVE');
+      $('reloadText').textContent = n ? 'RELEASE TO FLING' : '2 BLOCK RANGE';
+    } else if (gun.charging) {
+      $('ammoText').textContent = pct >= 100 ? (mag ? 'PULL!' : 'BOLTS!') : ('CHARGE ' + pct + '%');
+      $('reloadText').textContent = 'HOLD 1s';
+    } else {
+      $('ammoText').textContent = mag ? 'MAGNET · 2m' : 'TAZER · 2m';
+      $('reloadText').textContent = mag ? 'HOLD TO PULL' : 'HOLD TO SHOCK';
+    }
+  } else if (gdef.id === 'shuriken') {
+    const n = gun.charging ? shurikenBurstCount(gun.charge) : 1;
+    $('ammoText').textContent = gun.reload > 0 ? '0 / ' + maxA : (gun.ammo + ' / ' + maxA);
+    $('reloadText').textContent = gun.reload > 0 ? 'NEW STACK' : gun.charging ? ('BURST ×' + n) : (gun.ammo === 0 ? 'PRESS R' : 'TAP / HOLD');
   } else if (gdef.id === 'paintbrush') {
     const pct = Math.round(Math.min(1, gun.charge / (gdef.charge || 1)) * 100);
     const cactus = equippedWskin('paintbrush') === 'cactus';
@@ -10268,6 +12172,9 @@ function updateHud(dt) {
   if (gun.reload > 0 && gdef.id === 'sniper' && equippedWskin('sniper') === 'cardboard') {
     $('reloadText').textContent = gun.reload > RELOAD_TIME * 0.72 ? 'OPEN' : gun.reload > RELOAD_TIME * 0.22 ? 'STUFF PAPER' : 'CLOSE';
   }
+  if (gun.reload > 0 && gdef.id === 'shuriken' && equippedWskin('shuriken') === 'papershuri') {
+    $('reloadText').textContent = gun.reload > RELOAD_TIME * 0.78 ? 'PAPER OUT' : gun.reload > RELOAD_TIME * 0.35 ? 'FOLDING' : 'LOCK STAR';
+  }
   if (gun.reload > 0 && gdef.id === 'shotgun' && equippedWskin('shotgun') === 'wine') {
     $('reloadText').textContent = gun.reload > RELOAD_TIME * 0.55 ? 'THROW' : gun.reload > RELOAD_TIME * 0.35 ? 'SHATTER' : 'NEW BOTTLE';
   }
@@ -10288,9 +12195,13 @@ function updateHud(dt) {
   if ($('accHyper')) $('accHyper').classList.toggle('hidden', !accHyper);
 const pips = $('pips');
   const pipCount = gdef.id === 'lasso' ? (gdef.lassoCap || 10)
-    : (gdef.id === 'bow' || gdef.id === 'paintbrush' || gdef.id === 'laser' || gdef.id === 'crossbow' || gdef.id === 'canon') ? 10
+    : (gdef.id === 'bow' || gdef.id === 'paintbrush' || gdef.id === 'laser' || gdef.id === 'crossbow' || gdef.id === 'canon' || gdef.id === 'hammer' || gdef.id === 'tazer') ? 10
     : Math.min(15, Math.max(1, maxA));
-  const filled = gdef.id === 'canon'
+  const filled = gdef.id === 'tazer'
+    ? (gun.tazeOn ? pipCount : gun.charging ? Math.round(Math.min(1, gun.charge / (gdef.charge || 1)) * pipCount) : gun.autoCd > 0 ? Math.round((1 - gun.autoCd / (gdef.rate || 1.2)) * pipCount) : pipCount)
+    : gdef.id === 'hammer'
+    ? (gun.hammerLeap || me.hammerLeap ? pipCount : gun.charging ? Math.round(Math.min(1, gun.charge / (gdef.charge || 3)) * pipCount) : gun.autoCd > 0 ? Math.round((1 - gun.autoCd / (gdef.rate || 1)) * pipCount) : pipCount)
+    : gdef.id === 'canon'
     ? (gun.canonFlight > 0 ? Math.round((gun.canonFlight / 4) * pipCount)
       : gun.canonShock > 0 ? Math.round((gun.canonShock / 2) * pipCount)
       : gun.canonCd > 0 ? Math.round(gun.canonCd * pipCount)
@@ -10317,13 +12228,17 @@ const pips = $('pips');
   const active = me.item === 'gun' ? ['RAPID FIRE', me.itemT] : me.dash > 0 ? ['DASH', me.dash] : me.shieldT > 1.6 ? ['SHIELD', me.shieldT] : null;
   show('itemBox', !!active);
   if (active) $('itemBox').textContent = `${active[0]} ${Math.ceil(active[1])}s`;
-  const charging = gun.charging && (gdef.id === 'bow' || gdef.id === 'sniper' || gdef.id === 'paintbrush' || gdef.id === 'crossbow' || gdef.id === 'canon' || (gdef.id === 'laser' && !gun.laserBeam));
+  const charging = gun.charging && (gdef.id === 'bow' || gdef.id === 'sniper' || gdef.id === 'paintbrush' || gdef.id === 'crossbow' || gdef.id === 'canon' || gdef.id === 'shuriken' || gdef.id === 'hammer' || gdef.id === 'tazer' || (gdef.id === 'laser' && !gun.laserBeam));
   const xbowReady = gdef.id === 'crossbow' && gun.xbowLoaded;
-  show('chargeBar', charging || gun.laserBeam || xbowReady);
+  show('chargeBar', charging || gun.laserBeam || xbowReady || gun.tazeOn);
   if (gun.laserBeam) $('chargeFill').style.width = (Math.max(0, 1 - gun.laserT / (gdef.beamMax || 5)) * 100) + '%';
+  else if (gun.tazeOn) $('chargeFill').style.width = '100%';
   else if (xbowReady) $('chargeFill').style.width = '100%';
+  else if (charging && gdef.id === 'shuriken') $('chargeFill').style.width = (Math.min(1, gun.charge / 1.2) * 100) + '%';
+  else if (charging && gdef.id === 'hammer') $('chargeFill').style.width = (Math.min(1, gun.charge / (gdef.charge || 3)) * 100) + '%';
+  else if (charging && gdef.id === 'tazer') $('chargeFill').style.width = (Math.min(1, gun.charge / (gdef.charge || 1)) * 100) + '%';
   else if (charging) $('chargeFill').style.width = (Math.min(1, gun.charge / (gdef.charge || 2)) * 100) + '%';
-  $('crosshair').classList.toggle('off', gun.reload > 0 || gun.laserBeam || gun.laserCd > 0 || (gdef.id === 'sniper' && gun.charging && gun.charge >= (gdef.charge || 0.5)) || (gdef.id !== 'bow' && gdef.id !== 'gauntlet' && gdef.id !== 'paintbrush' && gdef.id !== 'laser' && gdef.id !== 'crossbow' && gdef.id !== 'canon' && gdef.id !== 'lasso' && gun.ammo === 0 && me.item !== 'gun'));
+  $('crosshair').classList.toggle('off', gun.reload > 0 || gun.laserBeam || gun.laserCd > 0 || !!(gun.hammerLeap || me.hammerLeap) || !!me.tazed || (gdef.id === 'sniper' && gun.charging && gun.charge >= (gdef.charge || 0.5)) || (gdef.id !== 'bow' && gdef.id !== 'gauntlet' && gdef.id !== 'paintbrush' && gdef.id !== 'laser' && gdef.id !== 'crossbow' && gdef.id !== 'canon' && gdef.id !== 'lasso' && gdef.id !== 'spear' && gdef.id !== 'hammer' && gdef.id !== 'tazer' && gun.ammo === 0 && me.item !== 'gun'));
   $('crosshair').classList.toggle('lock', gdef.id === 'crossbow' && gun.xbowLoaded);
   if (isSurvival() && !me.alive) $('crosshair').classList.add('off');
   show('deadBox', !me.alive && phase !== 'results' && !(isSurvival() && livingMates().length));
@@ -10348,7 +12263,7 @@ function updateVisuals(dt, t) {
   for (const q of players.values()) {
     if (!q.mesh) continue;
     if (!isHost() || !q.npc) {
-      if (q.tgt && !(isHost() && q.npc)) {
+      if (q.tgt && !(isHost() && q.npc) && !q.hammerLeap && !q.tazed && !q.tazeFling) {
         const k = Math.min(1, dt * 14);
         q.x += (q.tgt.x - q.x) * k; q.y += (q.tgt.y - q.y) * k; q.z += (q.tgt.z - q.z) * k;
         let dy = q.tgt.yaw - q.yaw;
@@ -10524,6 +12439,8 @@ function frame(nowMs) {
     updateProjectiles(dt);
     updateLassos(dt);
     for (const q of players.values()) if (q.lassoSlam) tickLassoSlam(q, dt);
+    for (const q of players.values()) if (q.hammerLeap && !q.local) tickHammerLeap(q, dt);
+    for (const q of players.values()) if (q.tazeFling && !q.local) tickTazeFling(q, dt);
     updateGrapples(dt);
     updateSkyVisuals(dt);
     updateFlash(dt);
@@ -10535,7 +12452,8 @@ function frame(nowMs) {
     const moving = Math.hypot(me.vx, me.vz) > 0.5 && me.onGround;
     const bobY = moving ? Math.sin(t * 11) * 0.02 : Math.sin(t * 2.2) * 0.008;
     const bobX = moving ? Math.cos(t * 5.5) * 0.012 : Math.sin(t * 1.4) * 0.004;
-    const ch = gun.charging ? Math.min(1, gun.charge / (equippedGun(me).charge || 2)) : 0;
+    const isHammerView = viewGun.userData.kind === 'hammer';
+    const ch = (gun.charging && !isHammerView) ? Math.min(1, gun.charge / (equippedGun(me).charge || 2)) : 0;
     const isBow = viewGun.userData.kind === 'bow';
     const isBrush = viewGun.userData.kind === 'paintbrush';
     const isLaser = viewGun.userData.kind === 'laser';
@@ -10546,7 +12464,7 @@ function frame(nowMs) {
     let ry = br[1] + (isBow ? -ch * 0.08 : 0);
     let rz = br[2] + bobX * 0.6 + Math.sin(t * (gun.charging ? 16 : 0)) * ch * 0.03;
     const skinNow = viewGun.userData.skin;
-    const reloadKick = gun.reload > 0 && skinNow !== 'balloon' && skinNow !== 'cardboard' && skinNow !== 'wine' && skinNow !== 'water' ? Math.sin(gun.reload / RELOAD_TIME * Math.PI) * 0.75 : 0;
+    const reloadKick = gun.reload > 0 && skinNow !== 'balloon' && skinNow !== 'cardboard' && skinNow !== 'wine' && skinNow !== 'water' && skinNow !== 'papershuri' ? Math.sin(gun.reload / RELOAD_TIME * Math.PI) * 0.75 : 0;
     rx -= reloadKick;
     const ud = viewGun.userData;
     if (ud.skin === 'staff') {
@@ -10935,13 +12853,253 @@ function frame(nowMs) {
       const thr = gun.lassoAnim || 0;
       const swing = Math.sin(Math.min(1, thr) * Math.PI);
       syncLassoHoop(viewGun, me.lassoN || 0, t, thr);
-      // Hand/stem stay calm — top hoop (or hook tip) does the spinning
-      rx += Math.sin(t * 1.7) * 0.05 + swing * 0.35;
-      ry += Math.sin(t * 1.2) * 0.07 - swing * 0.2;
-      rz += Math.cos(t * 1.4) * 0.05 + swing * 0.16;
-      px += Math.sin(t * 1.5) * 0.016;
-      py += Math.cos(t * 1.9) * 0.014 + swing * 0.05;
-      pz += swing * 0.045;
+      if (ud.hook || viewGun.userData.skin === 'hook') {
+        // Hook: hand stays calmer — tip does the spinning
+        rx += Math.sin(t * 1.7) * 0.05 + swing * 0.35;
+        ry += Math.sin(t * 1.2) * 0.07 - swing * 0.2;
+        rz += Math.cos(t * 1.4) * 0.05 + swing * 0.16;
+        px += Math.sin(t * 1.5) * 0.016;
+        py += Math.cos(t * 1.9) * 0.014 + swing * 0.05;
+        pz += swing * 0.045;
+      } else {
+        // Classic gold-ring lasso: grip swings, ring spins in syncLassoHoop
+        rx += Math.sin(t * 1.8) * 0.08 + swing * 0.55;
+        ry += Math.sin(t * 1.4) * 0.12 - swing * 0.35;
+        rz += Math.cos(t * 1.6) * 0.08 + swing * 0.28;
+        px += Math.sin(t * 1.5) * 0.02;
+        py += Math.cos(t * 2.1) * 0.018 + swing * 0.04;
+        pz += swing * 0.05;
+      }
+    }
+    if (viewGun.userData.kind === 'spear') {
+      const jab = gun.spearAnim || 0;
+      const u = Math.sin(Math.min(1, jab) * Math.PI);
+      pz -= u * 0.55;
+      px += u * 0.04;
+      rx -= u * 0.35;
+      ry += u * 0.08;
+      if (jab > 0.55) rz += (1 - jab) * 0.2;
+    }
+    if (viewGun.userData.kind === 'tazer') {
+      const hold = gun.charging ? Math.min(1, gun.charge / (equippedGun(me).charge || 1)) : 0;
+      const live = gun.tazeOn ? 1 : hold;
+      const magnetSkin = ud.skin === 'magnet';
+      rx -= live * (magnetSkin ? 0.2 : 0.15);
+      pz += live * 0.04;
+      if (gun.tazeOn) {
+        rz += Math.sin(t * (magnetSkin ? 22 : 40)) * (magnetSkin ? 0.12 : 0.08);
+        ry += Math.sin(t * (magnetSkin ? 16 : 28)) * (magnetSkin ? 0.1 : 0.05);
+        if (magnetSkin) {
+          py += Math.sin(t * 10) * 0.012;
+          if (ud.field) ud.field.rotation.z = t * 4.5;
+          if (ud.rings) ud.rings.forEach((r, i) => {
+            const pulse = 1 + Math.sin(t * 8 + i) * 0.18;
+            r.scale.setScalar(pulse);
+            if (r.material) r.material.emissiveIntensity = 0.6 + Math.sin(t * 12 + i) * 0.5;
+            r.rotation.z = t * (1.5 + i * 0.7);
+          });
+          if (ud.magnetArms) ud.magnetArms.forEach((a, i) => {
+            if (a.material && a.material.emissiveIntensity != null) a.material.emissiveIntensity = 0.2 + Math.sin(t * 14 + i) * 0.15;
+          });
+          if (ud.tip && ud.tip.material) ud.tip.material.emissiveIntensity = 1.4 + Math.sin(t * 20) * 0.7;
+          if (ud.prongs) ud.prongs.forEach(p => { if (p.material) { p.material.emissive = p.material.emissive || new THREE.Color('#c5ccd6'); p.material.emissiveIntensity = 0.8 + Math.sin(t * 18) * 0.4; } });
+        } else {
+          if (ud.tip && ud.tip.material) ud.tip.material.emissiveIntensity = 1.6 + Math.sin(t * 30) * 0.8;
+          if (ud.prongs) ud.prongs.forEach(p => { if (p.material) p.material.emissiveIntensity = 1.4 + Math.sin(t * 36) * 0.7; });
+        }
+      } else if (ud.tip && ud.tip.material) ud.tip.material.emissiveIntensity = 0.6 + hold;
+      else if (magnetSkin && ud.rings) ud.rings.forEach(r => { r.scale.setScalar(0.7 + hold * 0.3); });
+    }
+    if (viewGun.userData.kind === 'hammer') {
+      const R90 = Math.PI / 2;
+      const hold = gun.charging ? Math.min(1, gun.charge / (equippedGun(me).charge || 3)) : 0;
+      const swing = gun.hammerAnim || 0;
+      const leap = gun.hammerLeap || me.hammerLeap;
+      const su = Math.sin(Math.min(1, swing) * Math.PI);
+      const mjol = ud.skin === 'mjolnir';
+      // Single-axis chop — never more than 90°
+      if (leap) {
+        const u = Math.min(1, leap.t / leap.dur);
+        const raise = Math.min(1, u / 0.45);
+        const fall = u > 0.55 ? Math.min(1, (u - 0.55) / 0.45) : 0;
+        const ang = R90 * (raise * (1 - fall));
+        rx -= ang;
+        py += raise * 0.06 * (1 - fall);
+        pz += fall * 0.04;
+        if (mjol && ud.glowParts) ud.glowParts.forEach(p => {
+          if (p.material) p.material.emissiveIntensity = (fall > 0 ? 1.8 : 0.4) + Math.sin(t * 20) * 0.5;
+        });
+      } else if (swing > 0) {
+        rx -= su * R90;
+        py += su * 0.05;
+        pz -= su * 0.04;
+      } else if (hold > 0) {
+        const ready = hold >= 1;
+        rx -= hold * R90;
+        py += hold * 0.06 + (ready ? Math.sin(t * 12) * 0.01 : 0);
+        if (ready) rx -= Math.sin(t * 9) * 0.02;
+        if (mjol && ready && Math.random() < dt * 8) {
+          const [dx, dy, dz] = aimDir();
+          sparkTrail(me.x + dx * 0.4, me.y + EYE + 0.2, me.z + dz * 0.4, '#9ecbff', 2);
+        }
+      } else {
+        rx += Math.sin(t * 1.6) * 0.02;
+      }
+      if (ud.head) ud.head.rotation.z = 0;
+      if (ud.strap) ud.strap.rotation.x = Math.sin(t * 3.2) * 0.12 + (hold || 0) * 0.15;
+      if (mjol && ud.glowParts && !leap) ud.glowParts.forEach(p => {
+        if (p.material) {
+          if (!p.material.emissive) p.material.emissive = new THREE.Color('#6aa8ff');
+          p.material.emissiveIntensity = 0.15 + hold * 0.9 + Math.sin(t * 6) * 0.08;
+        }
+      });
+    }
+    if (viewGun.userData.kind === 'shuriken') {
+      const hold = gun.charging ? Math.min(1, gun.charge / 1.2) : 0;
+      const stars = ud.stars || (ud.stack ? ud.stack.children : []);
+      const paperSkin = ud.skin === 'papershuri';
+      const fold = ud.fold;
+      if (paperSkin && fold && gun.reload > 0) {
+        const a = 1 - gun.reload / RELOAD_TIME;
+        if (ud.stack) { ud.stack.visible = false; ud.stack.scale.setScalar(1); ud.stack.position.y = 0; }
+        stars.forEach(c => { c.visible = false; });
+        fold.visible = true;
+        const sheet = fold.userData.sheet;
+        const forming = fold.userData.forming;
+        const stripA = fold.userData.stripA;
+        const stripB = fold.userData.stripB;
+        const aHinge = fold.userData.aHinge;
+        const bHingeT = fold.userData.bHingeT;
+        const bHingeB = fold.userData.bHingeB;
+        // Hands come in with blank paper
+        if (a < 0.14) {
+          const u = a / 0.14;
+          sheet.visible = true; if (forming) forming.visible = false;
+          if (stripA) { stripA.visible = true; stripA.scale.setScalar(1); stripA.rotation.z = 0; }
+          if (stripB) { stripB.visible = false; stripB.scale.setScalar(1); stripB.rotation.z = 0; }
+          if (aHinge) aHinge.rotation.y = 0;
+          if (bHingeT) bHingeT.rotation.x = 0;
+          if (bHingeB) bHingeB.rotation.x = 0;
+          sheet.position.set(0.28 * (1 - u), 0.12 - u * 0.08, 0.05);
+          sheet.rotation.set(-0.9 + u * 0.7, 0.55 * (1 - u), 0.2);
+          sheet.scale.set(0.55 + u * 0.45, 0.55 + u * 0.45, 1);
+          py += u * 0.05; rx -= u * 0.35; rz += u * 0.12;
+        } else if (a < 0.36) {
+          // First clean fold: left flap hinges over the crease
+          const u = (a - 0.14) / 0.22;
+          const ease = u * u * (3 - 2 * u);
+          sheet.visible = true; if (forming) forming.visible = false;
+          if (stripA) stripA.visible = true;
+          if (stripB) stripB.visible = u > 0.45;
+          sheet.position.set(0, 0.04, -0.02);
+          sheet.rotation.set(-0.2, 0, Math.sin(u * Math.PI) * 0.1);
+          sheet.scale.setScalar(1);
+          if (aHinge) aHinge.rotation.y = -ease * Math.PI;
+          py += 0.04; rx -= 0.25 + ease * 0.25; rz += Math.sin(u * Math.PI) * 0.2;
+          // Finger press into the crease
+          pz += Math.sin(ease * Math.PI) * 0.03;
+          if (u > 0.55 && !gun.paperSnd) { gun.paperSnd = 1; sfx('paper_stuff'); }
+        } else if (a < 0.58) {
+          // Second strip slides in; top/bottom flaps fold cleanly
+          const u = (a - 0.36) / 0.22;
+          const ease = u * u * (3 - 2 * u);
+          sheet.visible = true; if (forming) forming.visible = false;
+          if (stripA) {
+            stripA.visible = true;
+            stripA.scale.set(1 - ease * 0.25, 1, 1);
+            stripA.rotation.z = ease * 0.35;
+          }
+          if (stripB) {
+            stripB.visible = true;
+            stripB.position.set(0.02 * (1 - ease), -0.04 + ease * 0.06, 0.012);
+            stripB.rotation.z = ease * 0.15;
+            stripB.scale.setScalar(0.85 + ease * 0.15);
+          }
+          if (aHinge) aHinge.rotation.y = -Math.PI;
+          if (bHingeT) bHingeT.rotation.x = -ease * Math.PI;
+          if (bHingeB) bHingeB.rotation.x = ease * Math.PI;
+          sheet.position.set(0, 0.02, -0.04);
+          sheet.rotation.set(-0.12 + ease * 0.2, ease * 0.18, Math.sin(u * 5) * 0.05);
+          py += 0.05; rx -= 0.32; ry += ease * 0.12; rz += Math.sin(u * Math.PI) * 0.24;
+          pz += 0.02;
+        } else if (a < 0.78) {
+          // Interlock modules into the cyan/white star
+          const u = (a - 0.58) / 0.2;
+          const ease = u * u * (3 - 2 * u);
+          sheet.visible = ease < 0.88;
+          if (sheet.visible) {
+            sheet.scale.setScalar(Math.max(0.12, 1 - ease * 1.15));
+            sheet.rotation.set(ease * 1.1, ease * 2.2, ease * 1.6);
+            sheet.position.set(0, 0.02 + ease * 0.05, -0.06);
+            if (aHinge) aHinge.rotation.y = -Math.PI;
+            if (bHingeT) bHingeT.rotation.x = -Math.PI;
+            if (bHingeB) bHingeB.rotation.x = Math.PI;
+          }
+          if (forming) {
+            forming.visible = true;
+            forming.scale.setScalar(0.2 + ease * 0.8);
+            forming.rotation.z = (1 - ease) * 2.8;
+            forming.position.set(0, 0.02, -0.08);
+          }
+          py += 0.04 * (1 - ease); rx -= 0.22 * (1 - ease); rz += (1 - ease) * 0.1;
+          if (u > 0.4 && !gun.paperSeat) { gun.paperSeat = 1; sfx('paper_stuff'); }
+        } else {
+          // Fresh stack of folded stars appears
+          const u = (a - 0.78) / 0.22;
+          fold.visible = u < 0.55;
+          if (forming) {
+            forming.visible = u < 0.55;
+            forming.scale.setScalar(1 - u * 0.3);
+            forming.position.y = u * 0.1;
+          }
+          if (sheet) sheet.visible = false;
+          if (ud.stack) {
+            ud.stack.visible = true;
+            ud.stack.scale.setScalar(0.4 + u * 0.6);
+            ud.stack.position.y = (1 - u) * 0.18;
+            stars.forEach((c, i) => { c.visible = i < Math.min(3, Math.ceil(u * 3)); });
+          }
+          py += (1 - u) * 0.03; rx -= (1 - u) * 0.12;
+        }
+      } else {
+        if (fold) {
+          fold.visible = false;
+          if (fold.userData.sheet) { fold.userData.sheet.visible = true; fold.userData.sheet.scale.setScalar(1); fold.userData.sheet.rotation.set(0, 0, 0); fold.userData.sheet.position.set(0, 0, 0); }
+          if (fold.userData.forming) fold.userData.forming.visible = false;
+          if (fold.userData.aHinge) fold.userData.aHinge.rotation.y = 0;
+          if (fold.userData.bHingeT) fold.userData.bHingeT.rotation.x = 0;
+          if (fold.userData.bHingeB) fold.userData.bHingeB.rotation.x = 0;
+          if (fold.userData.stripA) { fold.userData.stripA.visible = true; fold.userData.stripA.scale.setScalar(1); fold.userData.stripA.rotation.z = 0; }
+          if (fold.userData.stripB) { fold.userData.stripB.visible = true; fold.userData.stripB.scale.setScalar(1); fold.userData.stripB.rotation.z = 0; }
+        }
+        const showN = gun.reload > 0 ? 0 : Math.min(3, Math.max(0, gun.ammo));
+        stars.forEach((c, i) => {
+          const b = c.userData.base || { x: 0, y: 0, z: 0, rx: 0, ry: 0, rz: 0 };
+          c.visible = i < showN;
+          const spin = (i === 1 ? (8 + hold * 18) : 1.2 + i * 0.6) + (gun.shuriBurst > 0 ? 14 : 0);
+          c.rotation.z = b.rz + t * spin * 0.15 + (i === 1 ? t * spin * 0.85 : 0);
+          c.position.set(b.x + hold * i * 0.01, b.y + hold * 0.02, b.z - hold * (0.04 + i * 0.02));
+        });
+        if (ud.stack) {
+          if (gun.reload > 0) {
+            const a = 1 - gun.reload / RELOAD_TIME;
+            ud.stack.visible = a > 0.45;
+            if (a > 0.45) {
+              const u = (a - 0.45) / 0.55;
+              ud.stack.scale.setScalar(0.35 + u * 0.65);
+              ud.stack.position.y = (1 - u) * 0.22;
+              stars.forEach((c, i) => { c.visible = i < Math.min(3, Math.ceil(u * 3)); });
+            }
+          } else {
+            ud.stack.visible = showN > 0;
+            ud.stack.scale.setScalar(1);
+            ud.stack.position.y = 0;
+          }
+        }
+      }
+      rx -= hold * 0.12;
+      pz += hold * 0.04;
+      if (gun.shuriBurst > 0) { rx -= 0.08; rz += Math.sin(t * 40) * 0.1; }
     }
     if (viewGun.userData.kind === 'canon' && viewGun.userData.skin !== 'pirate') {
       const hot = gun.canonCd > 0 || gun.canonShock > 0 || gun.canonFlight > 0 || gun.charging;
@@ -10991,6 +13149,24 @@ addEventListener('beforeunload', () => {
   if (lobby && !lobby.solo) send({ t: lobby.isHost ? 'closed' : 'leave' });
 });
 
+function applyPersonalToMe() {
+  if (!me || !me.local) return;
+  syncPersonalFlags(me);
+}
+function adminNudgeUp(id, delta) {
+  if (!adminOn()) return;
+  const cur = upCount(id);
+  const next = Math.max(0, Math.min(UP_MAX, cur + (delta | 0)));
+  if (next === cur) return;
+  if (!profile.up || typeof profile.up !== 'object') profile.up = { hp: 0, dmg: 0, spd: 0 };
+  profile.up[id] = next;
+  saveProfile();
+  applyPersonalToMe();
+  pushMyUpToLobby();
+  paintAdmin();
+  if (typeof shopTab !== 'undefined' && shopTab === 'up' && typeof renderShop === 'function') renderShop();
+  toast((PERSONAL_UPS.find(u => u.id === id) || { name: id }).name + ' · ' + next + '/' + UP_MAX);
+}
 function paintAdmin() {
   if (!adminOn()) return;
   $('admCoins').textContent = 'INFINITE COINS: ' + (adminState.infCoins ? 'ON' : 'OFF');
@@ -10998,6 +13174,9 @@ function paintAdmin() {
   $('admGod').textContent = 'INVINCIBLE: ' + (adminState.god ? 'ON' : 'OFF');
   $('admWave').value = adminState.wave || 1;
   if ($('admExpNow')) $('admExpNow').textContent = 'You have ' + (profile.exp || 0) + ' EXP';
+  if ($('admUpHp')) $('admUpHp').textContent = upCount('hp');
+  if ($('admUpDmg')) $('admUpDmg').textContent = upCount('dmg');
+  if ($('admUpSpd')) $('admUpSpd').textContent = upCount('spd');
   const sel = $('admRank');
   if (!sel.childElementCount) {
     for (const r of RANKS) {
@@ -11070,6 +13249,16 @@ if (ADMIN_DEVICE) {
     paintAdmin();
     toast('+' + n + ' EXP');
   };
+  document.querySelectorAll('#adminPanel .admUpBtn').forEach(btn => {
+    btn.onclick = e => {
+      e.preventDefault();
+      if (!adminOn()) return;
+      const row = btn.closest('.admUpRow');
+      const id = row && row.getAttribute('data-up');
+      const d = parseInt(btn.getAttribute('data-d'), 10) || 0;
+      if (id) adminNudgeUp(id, d);
+    };
+  });
   $('admClose').onclick = () => $('adminPanel').classList.add('hidden');
 }
 
